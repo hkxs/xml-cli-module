@@ -27,6 +27,7 @@ import binascii
 import importlib
 import logging
 import defusedxml.ElementTree as ET
+from xml.etree.ElementTree import ElementTree
 
 from xmlcli_mod.common import utils
 from xmlcli_mod.common import configurations
@@ -34,7 +35,6 @@ from xmlcli_mod.common.errors import InvalidXmlData
 from xmlcli_mod.common.errors import BiosKnobsDataUnavailable
 from xmlcli_mod.common.errors import XmlCliNotSupported
 
-from defusedxml import ElementTree as ET
 
 log = logging.getLogger(__name__)
 
@@ -1671,7 +1671,11 @@ def get_xml():
 
     if isxmlvalid(xml_addr, xml_size):
         xml_bytearray = read_mem_block(xml_addr, int(xml_size))
-        xml_data = ET.fromstring(xml_bytearray.decode())
+        defused_xml = ET.fromstring(xml_bytearray.decode())
+
+        # we're converting an element to a tree, we can safely use built-in xml
+        # module because, at this point, it's already being parsed by defusedxml
+        xml_data = ElementTree(defused_xml)
     else:
         CloseInterface()
         raise InvalidXmlData(f'XML is not valid or not yet generated xml_addr = 0x{xml_addr:X}, xml_size = 0x{xml_size:X}')

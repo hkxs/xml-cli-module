@@ -33,7 +33,7 @@ from xmlcli_mod.common.errors import RootError
 log = logging.getLogger(__name__)
 
 class XmlCli:
-    def __init__(self)->None:
+    def __init__(self) -> None:
         if not is_root():
             raise RootError()
 
@@ -42,5 +42,8 @@ class XmlCli:
         xmlclilib.verify_xmlcli_support()
         self._get_xml_knobs()
 
-    def _get_xml_knobs(self)->None:
+    def _get_xml_knobs(self) -> None:
           self.xml_knobs = xmlclilib.get_xml()
+
+    def save_xml_knobs(self, filename: str) -> None:
+        self.xml_knobs.write(filename)
