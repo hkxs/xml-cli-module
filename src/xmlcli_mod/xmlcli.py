@@ -30,7 +30,38 @@ from xmlcli_mod.dataclasses.knobs import Knob
 log = logging.getLogger(__name__)
 
 class XmlCli:
+    """
+    A class for reading XML-based BIOS knobs through CLI access.
+
+    Attributes
+    ----------
+    xml_data : xml.etree.ElementTree.Element
+        The XML data parsed from the BIOS XML configuration.
+    bios_knobs : dict[str, Knob]
+        A dictionary mapping knob names to their corresponding Knob objects.
+        This property is lazily loaded and parsed from the XML data the first
+        time it is accessed.
+    _knobs : dict[str, Knob] | None
+        A dictionary of BIOS knobs, lazy-loaded when accessed.
+
+    Methods
+    -------
+    save_xml_knobs(filename: str) -> None
+        Saves the current XML data to the specified file.
+    get_knob(knob_name: str) -> Knob
+        Retrieves a specific knob by name.
+    compare_knob(knob_name: str, value: str | int) -> bool
+        Compares the value of a specific knob to the provided value.
+    """
     def __init__(self) -> None:
+        """
+        Initializes the XmlCli instance.
+
+        Raises
+        ------
+        RootError
+            If the current user is not a root user.
+        """
         if not is_root():
             raise RootError()
 
@@ -41,18 +72,54 @@ class XmlCli:
         self._get_xml_knobs()
 
     def _get_xml_knobs(self) -> None:
-          self.xml_data = xmlclilib.get_xml()
+        """
+        Retrieves the XML data and initializes the XML data attribute.
+
+        This method fetches the XML configuration and assigns it to the
+        `xml_data` attribute.
+        """
+        self.xml_data = xmlclilib.get_xml()
 
     def save_xml_knobs(self, filename: str) -> None:
+        """
+        Saves the current XML data to the specified file.
+
+        Parameters
+        ----------
+        filename : str
+            The path to the file where XML data will be saved.
+        """
         self.xml_data.write(filename)
 
     @property
     def bios_knobs(self):
+        """
+        Returns the dictionary of BIOS knobs.
+
+        The knobs are lazily loaded and parsed from the XML data the first time
+        this property is accessed.
+
+        Returns
+        -------
+        dict[str, Knob]
+            A dictionary mapping knob names to their corresponding Knob objects.
+        """
         if not self._knobs:
             self._knobs = self._extract_knobs()
         return self._knobs
 
     def _extract_knobs(self) -> dict[str: Knob]:
+        """
+        Parses the XML data to extract BIOS knobs.
+
+        This method traverses the XML tree to build a dictionary of Knob objects,
+        indexed by their names.
+
+        Returns
+        -------
+        dict[str, Knob]
+            A dictionary where the keys are knob names and the values are Knob objects.
+        """
         knobs_dict = {}
         bios_knobs = self.xml_data.getroot().find("biosknobs")
         for knob in bios_knobs.findall("knob"):
@@ -74,7 +141,40 @@ class XmlCli:
         return knobs_dict
 
     def get_knob(self, knob_name: str) -> Knob:
+        """
+        Retrieves a specific knob by name.
+
+        Parameters
+        ----------
+        knob_name : str
+            The name of the knob to retrieve.
+
+        Returns
+        -------
+        Knob
+            The Knob object corresponding to the provided name.
+
+        Raises
+        ------
+        KeyError
+            If no knob with the given name exists.
+        """
         return self.bios_knobs[knob_name]
 
     def compare_knob(self, knob_name: str, value: str|int) -> bool:
+        """
+        Compares the value of a specific knob to the provided value.
+
+        Parameters
+        ----------
+        knob_name : str
+            The name of the knob to compare.
+        value : str | int
+            The value to compare against the knob's current value.
+
+        Returns
+        -------
+        bool
+            True if the knob's value matches the provided value, False otherwise.
+        """
         return self.bios_knobs[knob_name] == value
