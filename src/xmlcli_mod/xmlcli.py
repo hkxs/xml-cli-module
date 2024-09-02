@@ -43,7 +43,4 @@ class XmlCli:
         self._get_xml_knobs()
 
     def _get_xml_knobs(self)->None:
-        with TemporaryDirectory() as tmpdir:
-            temp_file = os.path.join(tmpdir, "temp.xml")
-            xmlclilib.save_xml(temp_file)
-            self.xml_knobs = parse(temp_file)
+          self.xml_knobs = xmlclilib.get_xml()

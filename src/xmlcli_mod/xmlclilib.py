@@ -26,6 +26,7 @@ import copy
 import binascii
 import importlib
 import logging
+import defusedxml.ElementTree as ET
 
 from xmlcli_mod.common import utils
 from xmlcli_mod.common import configurations
@@ -316,7 +317,7 @@ def coldreset():
     return cliaccess.cold_reset()
 
 
-def memBlock(address, size):
+def read_mem_block(address, size):
     """
     Reads the data block of given size from target memory
     starting from given address.
@@ -868,7 +869,7 @@ def WaitForCliResponse(CLI_ResBuffAddr, Delay=1, Retries=12, PrintRes=1):
             haltcpu()
         else:
             haltcpu(delay=Delay)
-        ResHeaderbuff = memBlock(CLI_ResBuffAddr, CLI_REQ_RES_BUFF_HEADER_SIZE)
+        ResHeaderbuff = read_mem_block(CLI_ResBuffAddr, CLI_REQ_RES_BUFF_HEADER_SIZE)
         ResReadySig = ReadBuffer(ResHeaderbuff, CLI_REQ_RES_READY_SIG_OFF, 4, HEX)
         if ResReadySig == CLI_RES_READY_SIG:  # Verify if BIOS is done with the request
             if PrintRes == 1:
@@ -955,9 +956,9 @@ def isxmlvalid(gbt_xml_address, gbt_xml_size):
     global LastErrorSig
     LastErrorSig = 0x0000
     try:
-        temp_buffer = memBlock(gbt_xml_address, 0x08)  # Read/save parameter buffer
+        temp_buffer = read_mem_block(gbt_xml_address, 0x08)  # Read/save parameter buffer
         SystemStart = ReadBuffer(temp_buffer, 0, 0x08, ASCII)
-        temp_buffer = memBlock(gbt_xml_address + gbt_xml_size - 0xB, 0x09)  # Read/save parameter buffer
+        temp_buffer = read_mem_block(gbt_xml_address + gbt_xml_size - 0xB, 0x09)  # Read/save parameter buffer
         SystemEnd = ReadBuffer(temp_buffer, 0, 0x09, ASCII)
         if (SystemStart == XML_START) and (SystemEnd == XML_END):
             return True
@@ -1064,11 +1065,11 @@ def PatchXmlData(XmlListBuff, XmlAddr, XmlSize):
         PacketHdr = int(memread(PacketAddr, 8))
         PacketSize = ((PacketHdr >> 40) & 0xFFFFFF)
         if (((PacketHdr & 0xFFFFFFFFFF) == 0x4c444B5824) and (PacketSize != 0)):  # cmp with $XKDL
-            XmlKnobsDeltaBuff = memBlock((PacketAddr + 8), PacketSize)
+            XmlKnobsDeltaBuff = read_mem_block((PacketAddr + 8), PacketSize)
             XmlPatchDataFound = 1
             break
         if (((PacketHdr & 0xFFFFFFFFFF) == 0x54444B5824) and (PacketSize != 0)):  # cmp with $XKDT
-            XmlKnobsDeltaBuff = memBlock((PacketAddr + 8), PacketSize)
+            XmlKnobsDeltaBuff = read_mem_block((PacketAddr + 8), PacketSize)
             NewXmlPatchDataFound = 1
             break
         PacketAddr = ((PacketAddr + 8 + PacketSize + 0xFFF) & 0xFFFFF000)
@@ -1135,7 +1136,7 @@ def IsXmlGenerated():
         log.error('Dram Shared Mailbox not Valid, hence exiting')
         CloseInterface()
         return 1
-    DramSharedMBbuf = memBlock(DRAM_MbAddr, 0x200)  # Read/save parameter buffer
+    DramSharedMBbuf = read_mem_block(DRAM_MbAddr, 0x200)  # Read/save parameter buffer
     (XmlAddr, XmlSize) = readxmldetails(DramSharedMBbuf)  # read GBTG XML address and Size
     if (XmlAddr == 0):
         log.error('Platform Configuration XML not yet generated, hence exiting')
@@ -1425,7 +1426,7 @@ def SaveXmlLite(filename=PlatformConfigLiteXml, Operation='savexml', UserKnobsDi
         log.error('Dram Shared Mailbox not Valid, hence exiting')
         CloseInterface()
         return 1
-    DramSharedMBbuf = memBlock(DRAM_MbAddr, 0x200)  # Read/save parameter buffer
+    DramSharedMBbuf = read_mem_block(DRAM_MbAddr, 0x200)  # Read/save parameter buffer
     (XmlAddr, XmlSize) = readxmldetails(DramSharedMBbuf)  # read GBTG XML address and Size
     if (XmlAddr == 0):
         log.error('Platform Configuration XML not yet generated, hence exiting')
@@ -1542,7 +1543,7 @@ def SaveXmlLite(filename=PlatformConfigLiteXml, Operation='savexml', UserKnobsDi
             file_ptr.write(binascii.unhexlify(FinalNvarBuffStr))
 
     DRAM_MbAddr = GetDramMbAddr()  # Get DRam Mailbox Address.
-    dram_shared_mailbox_buffer = memBlock(DRAM_MbAddr, 0x200)  # Read/save parameter buffer
+    dram_shared_mailbox_buffer = read_mem_block(DRAM_MbAddr, 0x200)  # Read/save parameter buffer
     CLI_ReqBuffAddr = readclireqbufAddr(DramSharedMBbuf)  # Get CLI Request Buffer Address
     CLI_ResBuffAddr = readcliresbufAddr(DramSharedMBbuf)  # Get CLI Response Buffer Address
     if Operation != "savexml":
@@ -1577,7 +1578,7 @@ def SaveXmlLite(filename=PlatformConfigLiteXml, Operation='savexml', UserKnobsDi
 
     CurParamSize = int(memread(CLI_ResBuffAddr + CLI_REQ_RES_READY_PARAMSZ_OFF, 4))
     if (CurParamSize != 0):
-        CurParambuff = memBlock((CLI_ResBuffAddr + CLI_REQ_RES_BUFF_HEADER_SIZE), CurParamSize)
+        CurParambuff = read_mem_block((CLI_ResBuffAddr + CLI_REQ_RES_BUFF_HEADER_SIZE), CurParamSize)
         ResBufFilename = os.path.join(TempFolder, 'NvarRespBuff.bin')
         with open(ResBufFilename, 'wb') as out_file:  # opening for writing
             out_file.write(CurParambuff)
@@ -1655,14 +1656,13 @@ def SaveXmlLite(filename=PlatformConfigLiteXml, Operation='savexml', UserKnobsDi
     return Status
 
 
-def save_xml(filename):
+def get_xml():
     InitInterface()
 
     # TODO add verification of DRAM address using verify_xmlcli_support
+    dram_mb_addr = GetDramMbAddr()  # Get DRam MAilbox Address from Cmos.
 
-    DRAM_MbAddr = GetDramMbAddr()  # Get DRam MAilbox Address from Cmos.
-
-    dram_shared_memory_buf = memBlock(DRAM_MbAddr, 0x200)  # Read/save parameter buffer
+    dram_shared_memory_buf = read_mem_block(dram_mb_addr, 0x200)  # Read/save parameter buffer
     xml_addr, xml_size = readxmldetails(dram_shared_memory_buf)  # read GBTG XML address and Size
 
     if not xml_addr == 0:
@@ -1670,14 +1670,14 @@ def save_xml(filename):
         raise BiosKnobsDataUnavailable()
 
     if isxmlvalid(xml_addr, xml_size):
-        memsave(filename, xml_addr, int(xml_size))  # saves complete xml
-        log.debug(f'Saved XML Data as {filename}')
+        xml_bytearray = read_mem_block(xml_addr, int(xml_size))
+        xml_data = ET.fromstring(xml_bytearray.decode())
     else:
         CloseInterface()
         raise InvalidXmlData(f'XML is not valid or not yet generated xml_addr = 0x{xml_addr:X}, xml_size = 0x{xml_size:X}')
 
-    SanitizeXml(filename)
     CloseInterface()
+    return xml_data
 
 
 def XmlCmp(filename, XmlAddr):
@@ -1693,7 +1693,7 @@ def XmlCmp(filename, XmlAddr):
     :return:
     """
     HdrCmpLen = 0x140
-    targetbuff = list(memBlock(XmlAddr, HdrCmpLen))
+    targetbuff = list(read_mem_block(XmlAddr, HdrCmpLen))
     if (os.path.isfile(filename)) and (os.path.getsize(filename) > 0x800):
         log.info('File Exists:  comparing target & host XML header')
         with open(filename, 'rb') as HostXML:
@@ -1705,7 +1705,7 @@ def XmlCmp(filename, XmlAddr):
 
 # Extract knob name from given KnobEntry pointer.
 def findKnobName(KnobEntryAdd):
-    KnobEntryBuff = memBlock(KnobEntryAdd, 0x100)  # copy first 256 chars in temp buffer
+    KnobEntryBuff = read_mem_block(KnobEntryAdd, 0x100)  # copy first 256 chars in temp buffer
     Type = Name = ''
     for i in range(0x0, 0x100, 1):  # assuming the name attribute will be found within first 256 chars
         Knobname = ReadBuffer(KnobEntryBuff, i, 11, HEX)  # read 11 chars from buffer
@@ -1753,7 +1753,7 @@ def getBiosDetails():
         log.error('Dram Shared Mailbox not Valid, hence exiting')
         CloseInterface()
         return Platformname, BiosName, BiosTimestamp  # empty strings
-    DramSharedMBbuf = memBlock(DRAM_MbAddr, 0x200)  # Read/save parameter buffer
+    DramSharedMBbuf = read_mem_block(DRAM_MbAddr, 0x200)  # Read/save parameter buffer
     (XmlAddr, XmlSize) = readxmldetails(DramSharedMBbuf)
     if XmlAddr == 0:
         log.error('Platform Configuration XML not ready, hence exiting')
@@ -1762,7 +1762,7 @@ def getBiosDetails():
         CloseInterface()
         return Platformname, BiosName, BiosTimestamp  # empty Strings
     if isxmlvalid(XmlAddr, XmlSize):
-        XmlEntryBuff = memBlock(XmlAddr, 0x200)  # copy first 512 chars in temp buffer
+        XmlEntryBuff = read_mem_block(XmlAddr, 0x200)  # copy first 512 chars in temp buffer
         for i in range(0x0, 0x200, 1):  # assuming the name attribute will be found within first 512 chars
             Platformnametmp = ReadBuffer(XmlEntryBuff, i, 15, ASCII)  # read 16 chars from buffer
             BiosDetailstmp = ReadBuffer(XmlEntryBuff, i, 10, ASCII)  # read 16 chars from buffer
