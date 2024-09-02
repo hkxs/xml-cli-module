@@ -52,7 +52,7 @@ class XmlCli:
             self._knobs = self._extract_knobs()
         return self._knobs
 
-    def _extract_knobs(self):
+    def _extract_knobs(self) -> dict[str: Knob]:
         knobs_dict = {}
         bios_knobs = self.xml_data.getroot().find("biosknobs")
         for knob in bios_knobs.findall("knob"):
@@ -72,3 +72,9 @@ class XmlCli:
 
             knobs_dict[knob_name] = Knob(**knob_attributes)
         return knobs_dict
+
+    def get_knob(self, knob_name: str) -> Knob:
+        return self.bios_knobs[knob_name]
+
+    def compare_knob(self, knob_name: str, value: str|int) -> bool:
+        return self.bios_knobs[knob_name] == value
