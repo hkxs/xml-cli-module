@@ -229,9 +229,12 @@ class CliLib:
 
 
 def set_cli_access(req_access=None):
+    global cliaccess
     if not req_access:
         req_access = InterfaceType
-    cli_instance = CliLib(req_access.lower())
+    if not cliaccess:
+        cli_instance = CliLib(req_access.lower())
+        cliaccess = cli_instance.access_instance
 
 
 def _checkCliAccess():
