@@ -40,9 +40,7 @@ class XmlCli:
 
         self.xml_knobs = None
         xmlclilib.setCliAccess("Linux")
-        xmlcli_not_supported = xmlclilib.ConfXmlCli()
-        if xmlcli_not_supported:
-            raise XmlCliNotSupported(xmlcli_not_supported)
+        xmlclilib.verify_xmlcli_support()
         self._get_xml_knobs()
 
     def _get_xml_knobs(self)->None:

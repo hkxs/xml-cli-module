@@ -27,9 +27,10 @@ import binascii
 import importlib
 import logging
 
-from .common import utils
-from .common import configurations
-from .common import compress
+from xmlcli_mod.common import utils
+from xmlcli_mod.common import configurations
+from xmlcli_mod.common import compress
+from xmlcli_mod.common.errors import XmlCliNotSupported
 
 from defusedxml import ElementTree as ET
 
@@ -787,43 +788,16 @@ def GetDramMbAddr(display_spec=True):
   return 0
 
 
-def ConfXmlCli(SkipEnable=0):
-  global LastErrorSig
-  LastErrorSig = 0x0000
+def verify_xmlcli_support():
   InitInterface()
   DRAM_MbAddr = GetDramMbAddr()  # Get DRam MAilbox Address from Cmos.
   log.debug(f'CLI Spec Version = {GetCliSpecVersion(DRAM_MbAddr)}')
   log.debug(f'DRAM_MbAddr = 0x{DRAM_MbAddr:X}')
-  Status = 0
-  if DRAM_MbAddr == 0x0:
-    if SkipEnable == 0:
-      log.error('Dram Shared Mailbox not Valid, XmlCli May not be Enabled, Trying to Enable now..')
-      try:
-        from .tools.restricted import EnableXmlCli as exc
-      except (ModuleNotFoundError, ImportError) as e:
-        from .tools import EnableXmlCli as exc
-      except ImportError:
-        log.error(f'Import error on EnableXmlCli, current Python version {sys.version}')
-        CloseInterface()
-        LastErrorSig = 0x13E4  # import error
-        return 0xF
-      Status = exc.EnableXmlCli()
-      if Status == 0:
-        Status = 2
-        LastErrorSig = 0xCE4E  # XmlCli support was not Enabled, its now Enabled, Reboot Required
-      else:
-        log.error('XmlCli support is not Available in Your BIOS, Contact your BIOS Engineer..')
-        Status = 1
-        LastErrorSig = 0xC19A  # XmlCli Support not Available in BIOS
-    else:
-      log.error('XmlCli support is not Enable at the moment')
-      Status = 3
-      LastErrorSig = 0xC19E  # XmlCli Support not Enabled
-  else:
-    log.debug('XmlCli support is Enabled..')
-    Status = 0
+  if not DRAM_MbAddr:
+      raise XmlCliNotSupported()
+  log.debug('XmlCli is Enabled..')
   CloseInterface()
-  return Status
+
 
 
 def TriggerXmlCliEntry():

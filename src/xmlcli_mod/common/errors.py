@@ -25,13 +25,8 @@ class RootError(OSError):
         super().__init__(self.message)
 
 class XmlCliNotSupported(SystemError):
-    def __init__(self, xmlcli_status):
-        if xmlcli_status == 1:
-            self.message = "XmlCli not supported on the Current BIOS"
-        elif xmlcli_status == 2:
-            self.message = "XmlCli not enabled"
-        else:
-            self.message = "Unknown XmlCli error"
+    def __init__(self):
+        self.message = "XmlCli not supported/enabled on the Current BIOS"
         super().__init__(self.message)
 
 class BiosKnobsDataUnavailable(SystemError):
