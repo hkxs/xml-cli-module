@@ -134,8 +134,8 @@ class XmlCli:
                 "_offset": knob.attrib["offset"],
             }
             if knob_attributes["type"] == "scalar":
-                knob_attributes["default"] = int(knob_attributes["default"])
-                knob_attributes["value"] = int(knob_attributes["value"])
+                knob_attributes["default"] = int(knob_attributes["default"], 16)
+                knob_attributes["value"] = int(knob_attributes["value"], 16)
 
             knobs_dict[knob_name] = Knob(**knob_attributes)
         return knobs_dict
