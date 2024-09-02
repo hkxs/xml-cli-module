@@ -1665,7 +1665,7 @@ def get_xml():
     dram_shared_memory_buf = read_mem_block(dram_mb_addr, 0x200)  # Read/save parameter buffer
     xml_addr, xml_size = readxmldetails(dram_shared_memory_buf)  # read GBTG XML address and Size
 
-    if not xml_addr == 0:
+    if not xml_addr:
         CloseInterface()
         raise BiosKnobsDataUnavailable()
 
