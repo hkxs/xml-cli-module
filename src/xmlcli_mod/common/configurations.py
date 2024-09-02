@@ -59,8 +59,8 @@ TEMP_DIR = os.path.join(tempfile.gettempdir(), "XmlCliOut")
 # Configuration parser object
 
 ENCODING = "utf-8"
-ACCESS_METHOD = "Linux"
-ACCESS_METHODS = {"Linux": "access/linux/linux.ini"}
+ACCESS_METHOD = "linux"
+ACCESS_METHODS = {"linux": "access/linux/linux.ini"}
 PERFORMANCE = False
 # BIOS Knobs Configuration file
 BIOS_KNOBS_CONFIG = os.path.join(XMLCLI_DIR, 'cfg', 'BiosKnobs.ini')

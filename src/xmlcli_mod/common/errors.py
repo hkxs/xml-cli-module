@@ -17,6 +17,8 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
+from multiprocessing.managers import Value
+
 from pyexpat.errors import messages
 
 class RootError(OSError):
@@ -37,4 +39,9 @@ class InvalidXmlData(SystemError):
 class BiosKnobsDataUnavailable(SystemError):
     def __init__(self):
         self.message = "Unable to get Xml Cli data from the system"
+        super().__init__(self.message)
+
+class InvalidAccessMethod(ValueError):
+    def __init__(self, access):
+        self.message = f"Unsupported access method '{access}'"
         super().__init__(self.message)
