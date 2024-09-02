@@ -161,7 +161,7 @@ class XmlCli:
         """
         return self.bios_knobs[knob_name]
 
-    def compare_knob(self, knob_name: str, value: str|int) -> bool:
+    def compare_knob(self, knob_name: str, value: str | int) -> bool:
         """
         Compares the value of a specific knob to the provided value.
 
@@ -177,4 +177,4 @@ class XmlCli:
         bool
             True if the knob's value matches the provided value, False otherwise.
         """
-        return self.bios_knobs[knob_name] == value
+        return self.bios_knobs[knob_name].value == value
