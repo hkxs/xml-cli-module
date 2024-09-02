@@ -222,13 +222,12 @@ class CliLib(object):
 
         :return: dictionary structure {access_method_name: config_file}
         """
-        access_methods = dict(configurations.XMLCLI_CONFIG['ACCESS_METHODS'])
-        return access_methods
+        return configurations.ACCESS_METHODS
 
     def set_cli_access(self, access_request=None):
         access_methods = self.get_available_access_methods()
         if access_request in access_methods:
-            access_config = os.path.join(configurations.XMLCLI_DIR, access_methods["access_request"])
+            access_config = os.path.join(configurations.XMLCLI_DIR, access_methods[access_request])
             if os.path.exists(access_config):
                 self.access_config = configurations.config_read(access_config)
 
