@@ -1056,57 +1056,6 @@ def readLegMailboxAddrOffset(dram_shared_mailbox_buffer):
     return legacy_mailbox_address_offset
 
 
-def fetchHdrNknob(KnobFilename=None, PlatformXml=None):
-    """
-    Check & store the given XML File (only the Header + Knobs section)
-
-    :param KnobFilename: file name where requested xml details are to store
-    :param PlatformXml:
-    :return:
-    """
-    if KnobFilename == None:
-        KnobFilename = KnobsXmlFile
-    if PlatformXml == None:
-        PlatformXml = PlatformConfigXml
-    if SaveXml(PlatformXml) == 1:  # Check and Save the GBT XML knobs section.
-        log.error('Aborting due to Error!')
-        return 1
-    file_content = ""
-    with open(PlatformXml, 'r') as file_ptr:
-        src = file_ptr.read()
-        src = src.split("\n")
-    biosKnobStarted = biosKnobEnded = searchbiosKnob = systemDone = platformDone = biosDone = gbtDone = False
-    for line in src:
-        if line.find('<SYSTEM>') >= 0:
-            file_content += line
-            systemDone = True
-        elif line.find('<PLATFORM') >= 0:
-            file_content += line
-            platformDone = True
-        elif (line.find('<CPUSVBIOS') >= 0) or (line.find('<SVBIOS') >= 0) or (line.find('<BIOS') >= 0):
-            file_content += line
-            biosDone = True
-        elif line.find('<GBT') >= 0:
-            file_content += line
-            gbtDone = True
-        elif systemDone and platformDone and biosDone and gbtDone:  # All the headers are written then start from Bios Knob
-            break
-    for line in src:
-        if line.find('<biosknobs>') >= 0:
-            file_content += line
-            break
-    for line in src:
-        file_content += line
-        if line.find('</biosknobs>') >= 0:
-            break
-    for line in src:
-        if line.find('</SYSTEM>') >= 0:
-            file_content += line
-            break
-    with open(KnobFilename, 'w') as newFile:
-        newFile.write(file_content)
-
-
 def PatchXmlData(XmlListBuff, XmlAddr, XmlSize):
     XmlPatchDataFound = 0
     NewXmlPatchDataFound = 0
@@ -1706,7 +1655,7 @@ def SaveXmlLite(filename=PlatformConfigLiteXml, Operation='savexml', UserKnobsDi
     return Status
 
 
-def SaveXml(filename):
+def save_xml(filename):
     InitInterface()
 
     # TODO add verification of DRAM address using verify_xmlcli_support
