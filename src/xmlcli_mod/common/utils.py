@@ -437,7 +437,7 @@ def get_string(val, encoding=ENCODING):
   :param encoding: expected encoding format of output string
   :return: string value
   """
-  if PY3 and isinstance(val, bytes):
+  if (sys.version_info.major == 3) and isinstance(val, bytes):
     try:
       return val.decode(encoding=encoding)
     except UnicodeDecodeError:
