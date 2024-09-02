@@ -29,7 +29,12 @@ class XmlCliNotSupported(SystemError):
         self.message = "XmlCli not supported/enabled on the Current BIOS"
         super().__init__(self.message)
 
+class InvalidXmlData(SystemError):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
 class BiosKnobsDataUnavailable(SystemError):
     def __init__(self):
-        self.message = "unable to get Xml Cli data from the system"
+        self.message = "Unable to get Xml Cli data from the system"
         super().__init__(self.message)

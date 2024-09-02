@@ -29,7 +29,8 @@ import logging
 
 from xmlcli_mod.common import utils
 from xmlcli_mod.common import configurations
-from xmlcli_mod.common import compress
+from xmlcli_mod.common.errors import InvalidXmlData
+from xmlcli_mod.common.errors import BiosKnobsDataUnavailable
 from xmlcli_mod.common.errors import XmlCliNotSupported
 
 from defusedxml import ElementTree as ET
@@ -64,7 +65,6 @@ LastErrorSig = 0x0000
 LastErrorSigDict = {int(key, 16): value["msg"] for key, value in utils.STATUS_CODE_RECORD.items()}
 
 CliRespFlags = 0
-_isExeAvailable = True
 
 SHAREDMB_SIG1 = 0xBA5EBA11
 SHAREDMB_SIG2 = 0xBA5EBA11
@@ -232,37 +232,18 @@ class CliLib(object):
                 self.access_config = configurations.config_read(access_config)
 
 
-def is_exe_available(interface_type):
-    status = True
-    return status
-
-
-def setCliAccess(req_access=None):
+def set_cli_access(req_access=None):
     global cliaccess, InterfaceType, _isExeAvailable, LastErrorSig
     if req_access != None:
         InterfaceType = req_access
-    try:
         cli_instance = CliLib(InterfaceType.lower())
         cliaccess = cli_instance.access_instance  # Assign access method instance
-        _isExeAvailable = is_exe_available(InterfaceType)
-    except Exception as e:
-        InterfaceType = 'stub'
-
-    if InterfaceType == 'stub':
-        cli_instance = CliLib(InterfaceType.lower())
-        cliaccess = cli_instance.access_instance
-    if req_access not in ('stub', 'offline') and (InterfaceType == 'stub'):
-        LastErrorSig = 0x19FD  # Error initializing the given Interface Type
-        log.error('**** Error initializing the given Interface Type ****')
-    else:
-        LastErrorSig = 0x0000
-    log.debug(f'****    Using \"{InterfaceType}\" mode as Interface  ****')
 
 
 def _checkCliAccess():
     global cliaccess, ForceReInitCliAccess
     if ((cliaccess == None) or (ForceReInitCliAccess)):
-        setCliAccess()
+        set_cli_access()
 
 
 def haltcpu(delay=0):
@@ -808,24 +789,26 @@ def GetDramMbAddr(display_spec=True):
     dram_shared_mb_address = int((result1 << 24) | (result0 << 16))  # Get bits [31:24] of the Dram MB address
     if IsLegMbSigValid(dram_shared_mb_address):
         CloseInterface()
+        log.debug(f'CLI Spec Version = {GetCliSpecVersion(dram_shared_mb_address)}')
+        log.debug(f'DRAM_MbAddr = 0x{dram_shared_mb_address:X}')
         return dram_shared_mb_address
 
     if gDramSharedMbAddr != 0:
         dram_shared_mb_address = int(gDramSharedMbAddr)
         if IsLegMbSigValid(dram_shared_mb_address):
             CloseInterface()
+            log.debug(f'CLI Spec Version = {GetCliSpecVersion(dram_shared_mb_address)}')
+            log.debug(f'DRAM_MbAddr = 0x{dram_shared_mb_address:X}')
             return dram_shared_mb_address
     CloseInterface()
     LastErrorSig = 0xD9FD  # Dram Shared MailBox Not Found
+
     return 0
 
 
 def verify_xmlcli_support():
     InitInterface()
-    DRAM_MbAddr = GetDramMbAddr()  # Get DRam MAilbox Address from Cmos.
-    log.debug(f'CLI Spec Version = {GetCliSpecVersion(DRAM_MbAddr)}')
-    log.debug(f'DRAM_MbAddr = 0x{DRAM_MbAddr:X}')
-    if not DRAM_MbAddr:
+    if not GetDramMbAddr() :
         raise XmlCliNotSupported()
     log.debug('XmlCli is Enabled..')
     CloseInterface()
@@ -1723,111 +1706,29 @@ def SaveXmlLite(filename=PlatformConfigLiteXml, Operation='savexml', UserKnobsDi
     return Status
 
 
-def SaveXml(filename=None, ITPOptimz=0, MbAddr=0, XmlAddr=0, XmlSize=0):
-    """
-    Save entire/complete Target XML to desired file.
-
-    :param filename:
-    :param ITPOptimz:
-    :param MbAddr:
-    :param XmlAddr:
-    :param XmlSize:
-    :return:
-    """
-    global LastErrorSig, LEGACYMB_XML_OFF
-    LastErrorSig = 0x0000
-    if filename == None:
-        filename = PlatformConfigXml
-    Status = 0
+def SaveXml(filename):
     InitInterface()
-    DRAM_MbAddr = 0
-    if MbAddr == 0:
-        DRAM_MbAddr = GetDramMbAddr()  # Get DRam MAilbox Address from Cmos.
-    else:
-        DRAM_MbAddr = MbAddr
-    log.debug(f'CLI Spec Version = {GetCliSpecVersion(DRAM_MbAddr)}')
-    log.debug(f'DRAM_MbAddr = 0x{DRAM_MbAddr:X}')
-    if (DRAM_MbAddr == 0x0):
-        log.error('Dram Shared Mailbox not Valid, hence exiting')
+
+    # TODO add verification of DRAM address using verify_xmlcli_support
+
+    DRAM_MbAddr = GetDramMbAddr()  # Get DRam MAilbox Address from Cmos.
+
+    dram_shared_memory_buf = memBlock(DRAM_MbAddr, 0x200)  # Read/save parameter buffer
+    xml_addr, xml_size = readxmldetails(dram_shared_memory_buf)  # read GBTG XML address and Size
+
+    if not xml_addr == 0:
         CloseInterface()
-        return 1
-    DramSharedMBbuf = memBlock(DRAM_MbAddr, 0x200)  # Read/save parameter buffer
-    if (filename == SvXml):
-        TempXmlOfst = LEGACYMB_XML_OFF
-        LEGACYMB_XML_OFF = 0xC  # Point to SV PC XML offset (On-Demand)
-    if XmlAddr == 0:
-        (XmlAddr, XmlSize) = readxmldetails(DramSharedMBbuf)  # read GBTG XML address and Size
-    if (XmlAddr == 0):
-        log.error('Platform Configuration XML not yet generated, hence exiting')
-        CloseInterface()
-        LastErrorSig = 0x8AD0  # Xml Address is Zero
-        if (filename == SvXml):
-            LEGACYMB_XML_OFF = TempXmlOfst  # Restore orignal offset value before returning
-        return 1
-    if (isxmlvalid(XmlAddr, XmlSize)):
-        ComprXmlFound = False
-        if (_isExeAvailable):
-            PacketAddr = ((XmlAddr + XmlSize + 0xFFF) & 0xFFFFF000)
-            for count in range(0, 2):
-                PacketHdr = int(memread(PacketAddr, 8))
-                PacketSize = ((PacketHdr >> 40) & 0xFFFFFF)
-                if (((PacketHdr & 0xFFFFFFFFFF) == 0x414d5a4c24) and (PacketSize != 0)):  # cmp with $LZMA
-                    log.debug('Found LZMA Compressed XML, Downloading it')
-                    TempInFile = os.path.join(TempFolder, "GbtLzC.bin")
-                    TempOutFile = os.path.join(TempFolder, "GbtPc.xml")
-                    memsave(TempInFile, (PacketAddr + 8), int(PacketSize))
-                    try:
-                        compress.lzma_decompress(TempInFile, TempOutFile)
-                        RemoveFile(TempInFile)
-                        if (os.path.getsize(os.path.join(TempFolder, "GbtPc.xml"))):
-                            log.debug('LZMA Compressed XML Decompressed Successfully')
-                            ComprXmlFound = True
-                            break
-                    except:
-                        log.debug('Decompression Failed!, falling back to regular XML download.')
-                        ComprXmlFound = False
-                if (((PacketHdr & 0xFFFFFFFFFF) == 0x434F4E5424) and (PacketSize != 0)):  # cmp with $TNOC
-                    log.debug('Found Tiano Compressed XML, Downloading it')
-                    TempInFile = os.path.join(TempFolder, "GbtTianoC.bin")
-                    TempOutFile = os.path.join(TempFolder, "GbtPc.xml")
-                    memsave(TempInFile, (PacketAddr + 8), int(PacketSize))
-                    try:
-                        utils.system_call(cmd_lis=[TianoCompressUtility, "-d", "-q", TempInFile, "-o", TempOutFile])
-                        RemoveFile(TempInFile)
-                        if (os.path.getsize(os.path.join(TempFolder, "GbtPc.xml"))):
-                            log.debug('Tiano Compressed XML Decompressed Successfully')
-                            ComprXmlFound = True
-                            break
-                    except:
-                        log.debug('Decompression Failed!, falling back to regular XML download.')
-                        ComprXmlFound = False
-                PacketAddr = ((PacketAddr + 8 + PacketSize + 0xFFF) & 0xFFFFF000)
-        if (ComprXmlFound):
-            with open(os.path.join(TempFolder, "GbtPc.xml"), 'rb') as TempXML:
-                XmlListBuff = list(TempXML.read())
-            PatchXmlData(XmlListBuff, XmlAddr, XmlSize)
-            RemoveFile(os.path.join(TempFolder, "GbtPc.xml"))
-            with open(filename, 'wb') as NewXmlFile:  # opening for writing
-                NewXmlFile.write(bytearray(XmlListBuff))
-        else:
-            log.debug('Compressed XML is not supported, Downloading Regular XML')
-            if ((InterfaceType != 'itpii') and (InterfaceType != 'simics') and (InterfaceType != 'ltb') and (
-                    InterfaceType != 'svlegitp')):
-                ITPOptimz = 0
-            if ((XmlCmp(filename, XmlAddr) == False) or (ITPOptimz == 0)):
-                log.debug('Host XML did not exist or is different from Target XML, downloading Target XML..')
-                memsave(filename, XmlAddr, int(XmlSize))  # saves complete xml
-            else:
-                log.debug('Target XML is same as the one Pointed to, skipping XML download')
+        raise BiosKnobsDataUnavailable()
+
+    if isxmlvalid(xml_addr, xml_size):
+        memsave(filename, xml_addr, int(xml_size))  # saves complete xml
         log.debug(f'Saved XML Data as {filename}')
     else:
-        log.error(f'XML is not valid or not yet generated XmlAddr = 0x{XmlAddr:X}, XmlSize = 0x{XmlSize:X}')
-        Status = 1
+        CloseInterface()
+        raise InvalidXmlData(f'XML is not valid or not yet generated xml_addr = 0x{xml_addr:X}, xml_size = 0x{xml_size:X}')
+
     SanitizeXml(filename)
     CloseInterface()
-    if (filename == SvXml):
-        LEGACYMB_XML_OFF = TempXmlOfst  # Restore orignal offset value before returning
-    return Status
 
 
 def XmlCmp(filename, XmlAddr):
@@ -2018,7 +1919,7 @@ def get_bin_file(access_method, **kwargs):
         log.error(err_msg)
         raise Exception(err_msg)
     else:
-        setCliAccess(access_method)
+        set_cli_access(access_method)
         status = InitInterface()
         log.debug("Status of XmlCli (init interface..): {}".format(status))
         start = memory_size - max_bios_size  # start address of chunk to parse bios region
