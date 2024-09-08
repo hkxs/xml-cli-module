@@ -159,25 +159,6 @@ BITWISE_KNOB_PREFIX = 0xC0000
 
 
 
-def get_bitwise_knob_details(knob_size, knob_offset, padding=0x8000):
-    """Calculate Knob width for bitwise and non-bitwise knobs
-
-    :param knob_size: size of the knob as per bios knobs data bin
-    :param knob_offset: offset of the knob as per bios knobs data bin
-    :param padding: Add 0x8000 to offset to Set BIT15 of Offset to indicate this is Bitwise knob
-    :return: knob_width, knob_offset, bit_offset
-    """
-    knob_offset = knob_offset & 0x3FFFF
-    bit_offset = int(knob_offset % 8)
-    knob_offset = int(knob_offset / 8) + padding
-    knob_width = bit_offset + knob_size
-    if knob_width % 8:
-        knob_width = int(knob_width / 8 + 1)
-    else:
-        knob_width = int(knob_width / 8)
-    return knob_width, knob_offset, bit_offset
-
-
 class CliLib:
     def __init__(self, access_request):
         access_methods = self.get_available_access_methods()
@@ -433,24 +414,6 @@ def ReadBuffer(inBuffer, offset, size, inType):
     return 0
 
 
-def ReadList(inBuffer, offset, size, inType=HEX):
-    value_buffer = inBuffer[offset:offset + size]
-    if inType == ASCII:
-        for count in range(len(value_buffer)):
-            if value_buffer[count] == 0:
-                return ''.join(value_buffer[0:count])
-            value_buffer[count] = chr(value_buffer[count])
-        return ''.join(value_buffer)
-    for count in range(len(value_buffer)):
-        value_buffer[count] = hex(value_buffer[count])[2:].zfill(2)
-    return int(''.join(value_buffer[::-1]), 16)
-
-
-
-def HexLiFy(String):
-    return String.encode().hex()
-
-
 def UnHexLiFy(Integer):
     return binascii.unhexlify((hex(Integer)[2:]).strip('L')).decode()
 
@@ -670,14 +633,6 @@ OldBinNvarNameDictPly = {0: 'Setup', 1: 'SocketIioConfig', 2: 'SocketCommonRcCon
                          7: 'SocketProcessorCoreConfig', 8: 'SvOtherConfiguration', 9: 'SvPchConfiguration'}
 
 
-def Str2Int(StrVal):
-    StrVal = StrVal.strip()
-    if (len(StrVal) > 2):
-        if (StrVal[0:2] == '0x'):
-            return int(StrVal, 16)
-    return int(StrVal)
-
-
 def get_xml():
     InitInterface()
 
@@ -750,45 +705,6 @@ def getEfiCompatibleTableBase():
     return 0
 
 
-def get_bin_file(access_method, **kwargs):
-    """Stores chunk of memory consisting the bios
-
-    :param access_method: specify valid interface type
-    :param kwargs:
-        - max_bios_size: (optional) specifies size of bios in bytes
-        - memory_size: (optional) specifies size of memory in bytes boundary where end of bios lies
-        - output_bin_file: (optional) specifies location of storing chunk of memory
-    :return: location of binary file stored
-
-    Usage:
-    >>> get_bin_file(access_method="winhwa")    # specifies access method and stores result
-
-    Optional parameters can also be used to override default values as below
-    >>> get_bin_file(access_method="winhwa", max_bios_size=12 * (1024**2))  # overrides bios size to 12 MB and will store only 12 MB chunk ending at memory address
-
-    Multiple optional arguments can also be used to override default parameters
-    >>> get_bin_file(access_method="winhwa", max_bios_size=12 * (1024**2), bin_file="path/to/store/bin_file.bin")  # overrides default location of binary file to store and bios size
-    """
-    max_bios_size = kwargs.get("max_bios_size", 32 * (1024 ** 2))  # default: 32 MB
-    memory_size = kwargs.get("memory_size", 4 * (1024 ** 3))  # default: 4 GB
-    bin_file = kwargs.get("output_bin_file", os.path.join(TempFolder, "online_bios.bin"))
-    if access_method not in utils.VALID_ACCESS_METHODS:
-        err_msg = "Invalid Access Method: {}".format(access_method)
-        log.error(err_msg)
-        raise Exception(err_msg)
-    else:
-        set_cli_access(access_method)
-        status = InitInterface()
-        log.debug("Status of XmlCli (init interface..): {}".format(status))
-        start = memory_size - max_bios_size  # start address of chunk to parse bios region
-        log.debug("Start of BIOS at memory: 0x{:x}".format(start))
-        memsave(bin_file, start, max_bios_size)
-        if os.path.exists(bin_file):
-            log.info("Memory dump from 0x{:x} of size 0x{:x} is stored at: {}".format(start, max_bios_size, bin_file))
-        CloseInterface()
-        return bin_file
-
-
 def SearchForSystemTableAddress():
     for Address in range(0x20000000, 0xE0000000, 0x400000):  # EFI_SYSTEM_TABLE_POINTER address is 4MB aligned
         Signature = memread(Address, 8)
@@ -798,6 +714,7 @@ def SearchForSystemTableAddress():
     return 0
 
 
+# TODO this also seems kind of helpful
 def readDramMbAddrFromEFI():
     DramSharedMailBoxGuidLow = 0x4D2C18789D99A394
     DramSharedMailBoxGuidHigh = 0x3379C48E6BC1E998
