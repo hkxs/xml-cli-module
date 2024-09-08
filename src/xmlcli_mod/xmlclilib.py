@@ -37,41 +37,19 @@ from xmlcli_mod.common.errors import XmlCliNotSupported
 log = logging.getLogger(__name__)
 
 cliaccess = None
-FlexConCfgFile = False
-ForceReInitCliAccess = False
-UfsFlag = False
-KnobsIniFile = configurations.BIOS_KNOBS_CONFIG
-XmlCliToolsDir = configurations.TOOL_DIR
-TianoCompressUtility = configurations.TIANO_COMPRESS_BIN
-BrotliCompressUtility = configurations.BROTLI_COMPRESS_BIN
 
 TempFolder = configurations.OUT_DIR
 
-KnobsXmlFile = os.path.join(TempFolder, 'BiosKnobs.xml')
-PlatformConfigXml = os.path.join(TempFolder, 'PlatformConfig.xml')
-PlatformConfigLiteXml = os.path.join(TempFolder, 'PlatformConfigLite.xml')
-SvXml = os.path.join(TempFolder, 'SvPlatformConfig.xml')
 
-TmpKnobsIniFile = os.path.join(TempFolder, 'TmpBiosKnobs.ini')
-JSON_OUT_FILE = os.path.join(TempFolder, 'json_output.json')
-OutBinFile = ''
 gDramSharedMbAddr = 0
-MerlinxXmlCliEnableAddr = 0
 InterfaceType = configurations.ACCESS_METHOD
-XmlCliLogFile = os.path.join(TempFolder, 'XmlCli.log')
-XmlCliRespFlags = {'Status': 0, 'CantExe': 0, 'WrongParam': 0, 'TimedOut': 0, 'SideEffect': 'NoSideEffect'}
-LastErrorSig = 0x0000
-LastErrorSigDict = {int(key, 16): value["msg"] for key, value in utils.STATUS_CODE_RECORD.items()}
-
-CliRespFlags = 0
 
 SHAREDMB_SIG1 = 0xBA5EBA11
 SHAREDMB_SIG2 = 0xBA5EBA11
 SHARED_MB_LEGMB_SIG_OFF = 0x20
 SHARED_MB_LEGMB_ADDR_OFF = 0x24
 LEGACYMB_SIG = 0x5A7ECAFE
-XML_START = '<SYSTEM>'
-XML_END = '</SYSTEM>'
+
 SHAREDMB_SIG1_OFF = 0x00
 SHAREDMB_SIG2_OFF = 0x08
 CLI_SPEC_VERSION_MINOR_OFF = 0x14
@@ -82,21 +60,9 @@ LEGACYMB_OFF = 0x24
 LEGACYMB_XML_OFF = 0x0C
 MERLINX_XML_CLI_ENABLED_OFF = 0x28
 LEGACYMB_XML_CLI_TEMP_ADDR_OFF = 0x60
-STRING = 0x51
 ASCII = 0xA5
 HEX = 0x16
-SETUP_KNOBS_ADDR_OFF = 0x13C
-SETUP_KNOBS_SIZE_OFF = 0x140
-CPUSV_MAILBOX_ADDR_OFF = 0x14C
-XML_CLI_DISABLED_SIG = 0xCD15A1ED
-SHARED_MB_CLI_REQ_BUFF_SIG = 0xCA11AB1E
-SHARED_MB_CLI_RES_BUFF_SIG = 0xCA11B0B0
-SHARED_MB_CLI_REQ_BUFF_SIG_OFF = 0x30
-SHARED_MB_CLI_RES_BUFF_SIG_OFF = 0x40
-SHARED_MB_CLI_REQ_BUFF_ADDR_OFF = 0x34
-SHARED_MB_CLI_RES_BUFF_ADDR_OFF = 0x44
-SHARED_MB_CLI_REQ_BUFF_SIZE_OFF = 0x38
-SHARED_MB_CLI_RES_BUFF_SIZE_OFF = 0x48
+
 CLI_REQ_READY_SIG = 0xC001C001
 CLI_RES_READY_SIG = 0xCAFECAFE
 CLI_REQ_RES_READY_SIG_OFF = 0x00
@@ -105,56 +71,13 @@ CLI_REQ_RES_READY_FLAGS_OFF = 0x06
 CLI_REQ_RES_READY_STATUS_OFF = 0x08
 CLI_REQ_RES_READY_PARAMSZ_OFF = 0x0C
 CLI_REQ_RES_BUFF_HEADER_SIZE = 0x10
-WRITE_MSR_OPCODE = 0x11
-READ_MSR_OPCODE = 0x21
-IO_READ_OPCODE = 0x31
-IO_WRITE_OPCODE = 0x32
-APPEND_BIOS_KNOBS_CMD_ID = 0x48
-RESTOREMODIFY_KNOBS_CMD_ID = 0x49
-READ_BIOS_KNOBS_CMD_ID = 0x4A
-LOAD_DEFAULT_KNOBS_CMD_ID = 0x4B
-PROG_BIOS_CMD_ID = 0xB4
-FETCH_BIOS_CMD_ID = 0xB5
-BIOS_VERSION_OPCODE = 0xB1
-EXE_SV_SPECIFIC_CODE_OPCODE = 0x300
-READ_BRT_OPCODE = 0x310
-CREATE_FRESH_BRT_OPCODE = 0x311
-ADD_BRT_OPCODE = 0x312
-DEL_BRT_OPCODE = 0x313
-DIS_BRT_OPCODE = 0x314
-GET_SET_VARIABLE_OPCODE = 0x9E5E
-CLI_KNOB_APPEND = 0x0
-CLI_KNOB_RESTORE_MODIFY = 0x1
-CLI_KNOB_READ_ONLY = 0x2
-CLI_KNOB_LOAD_DEFAULTS = 0x3
 
 CliSpecRelVersion = 0x00
 CliSpecMajorVersion = 0x00
 CliSpecMinorVersion = 0x00
 
-MAXIMUM_BIOS_MEMORY_MAP = 0xFFFFFFFF
 PAGE_SIZE = 0x1000
-FIRMWARE_BASE_MASK_ALIGNMENT = (MAXIMUM_BIOS_MEMORY_MAP - PAGE_SIZE + 0x1)
 
-CliCmdDict = {APPEND_BIOS_KNOBS_CMD_ID: 'APPEND_BIOS_KNOBS_CMD_ID',
-              RESTOREMODIFY_KNOBS_CMD_ID: 'RESTOREMODIFY_KNOBS_CMD_ID',
-              READ_BIOS_KNOBS_CMD_ID: 'READ_BIOS_KNOBS_CMD_ID', LOAD_DEFAULT_KNOBS_CMD_ID: 'LOAD_DEFAULT_KNOBS_CMD_ID',
-              PROG_BIOS_CMD_ID: 'PROG_BIOS_CMD_ID', FETCH_BIOS_CMD_ID: 'FETCH_BIOS_CMD_ID',
-              BIOS_VERSION_OPCODE: 'BIOS_VERSION_OPCODE', EXE_SV_SPECIFIC_CODE_OPCODE: 'EXE_SV_SPECIFIC_CODE_OPCODE',
-              READ_MSR_OPCODE: 'READ_MSR_OPCODE', WRITE_MSR_OPCODE: 'WRITE_MSR_OPCODE',
-              IO_READ_OPCODE: 'IO_READ_OPCODE', IO_WRITE_OPCODE: 'IO_WRITE_OPCODE',
-              READ_BRT_OPCODE: 'READ_BRT_OPCODE', CREATE_FRESH_BRT_OPCODE: 'CREATE_FRESH_BRT_OPCODE',
-              ADD_BRT_OPCODE: 'ADD_BRT_OPCODE',
-              DEL_BRT_OPCODE: 'DEL_BRT_OPCODE', DIS_BRT_OPCODE: 'DIS_BRT_OPCODE'}
-
-Xml_Sanitization_Mapping = {0x00: 0x20, 0x01: 0x20, 0x02: 0x20, 0x03: 0x20, 0x04: 0x20, 0x05: 0x20, 0x06: 0x20,
-                            0x07: 0x20, 0x08: 0x20, 0x0B: 0x20, 0x0C: 0x20, 0x0E: 0x20, 0x0F: 0x20, 0x10: 0x20,
-                            0x11: 0x20, 0x12: 0x20, 0x13: 0x20, 0x14: 0x20, 0x15: 0x20, 0x16: 0x20, 0x17: 0x20,
-                            0x18: 0x20, 0x19: 0x20, 0x1A: 0x20, 0x1B: 0x20, 0x1C: 0x20, 0x1D: 0x20, 0x1E: 0x20,
-                            0x1F: 0x20, 0x7F: 0x20, 0xB5: 0x75, 0x26: 0x6E, 0xA0: 0x2E, 0xB0: 0x20}
-
-# Constants for Bitwise Knobs
-BITWISE_KNOB_PREFIX = 0xC0000
 
 
 class CliLib:
@@ -450,21 +373,12 @@ def FixLegXmlOffset(DramMbAddr):
 
 
 def IsLegMbSigValid(DramMbAddr):
-    global CliSpecRelVersion, CliSpecMajorVersion, MerlinxXmlCliEnableAddr
+    global CliSpecRelVersion, CliSpecMajorVersion
     SharedMbSig1 = memread((DramMbAddr + SHAREDMB_SIG1_OFF), 4)
     SharedMbSig2 = memread((DramMbAddr + SHAREDMB_SIG2_OFF), 4)
     if (SharedMbSig1 == SHAREDMB_SIG1) and (SharedMbSig2 == SHAREDMB_SIG2):
         cli_spec_version = GetCliSpecVersion(DramMbAddr)
-        ShareMbEntry1Sig = memread((DramMbAddr + LEGACYMB_SIG_OFF), 4)
-        if ShareMbEntry1Sig == LEGACYMB_SIG:
-            FixLegXmlOffset(DramMbAddr)
-            if (CliSpecRelVersion >= 0) and (CliSpecMajorVersion >= 8):
-                LegMbOffset = int(memread(DramMbAddr + LEGACYMB_OFF, 4))
-                if LegMbOffset > 0xFFFF:
-                    MerlinxXmlCliEnableAddr = LegMbOffset + MERLINX_XML_CLI_ENABLED_OFF
-                else:
-                    MerlinxXmlCliEnableAddr = DramMbAddr + LegMbOffset + MERLINX_XML_CLI_ENABLED_OFF
-            return cli_spec_version
+        return cli_spec_version
     return False
 
 
@@ -562,7 +476,7 @@ def isxmlvalid(gbt_xml_address, gbt_xml_size):
         SystemStart = ReadBuffer(temp_buffer, 0, 0x08, ASCII)
         temp_buffer = read_mem_block(gbt_xml_address + gbt_xml_size - 0xB, 0x09)  # Read/save parameter buffer
         SystemEnd = ReadBuffer(temp_buffer, 0, 0x09, ASCII)
-        if (SystemStart == XML_START) and (SystemEnd == XML_END):
+        if (SystemStart == "<SYSTEM>") and (SystemEnd == "</SYSTEM>"):
             return True
         else:
             LastErrorSig = 0x8311  # Xml data is in-valid
@@ -601,31 +515,6 @@ def IsXmlGenerated():
         Status = 1
     CloseInterface()
     return Status
-
-
-EFI_IFR_ONE_OF_OP = 0x05
-EFI_IFR_CHECKBOX_OP = 0x06
-EFI_IFR_NUMERIC_OP = 0x07
-EFI_IFR_STRING_OP = 0x1C
-BIOS_KNOBS_DATA_BIN_HDR_SIZE_OLD = 0x10
-INVALID_KNOB_SIZE = 0xFF
-BIOS_KNOBS_DATA_BIN_HDR_SIZE = 0x40
-BIOS_KNOBS_DATA_BIN_HDR_SIZE_V03 = 0x50
-BIOS_KNOB_BIN_REVISION_OFFSET = 0x0F
-NVAR_NAME_OFFSET = 0x0E
-NVAR_SIZE_OFFSET = 0x10
-BIOS_KNOB_BIN_GUID_OFFSET = 0x12
-
-ZeroGuid = [0x00000000, 0x0000, 0x0000, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-SetupTypeHiiDict = {EFI_IFR_ONE_OF_OP: 'oneof', EFI_IFR_NUMERIC_OP: 'numeric', EFI_IFR_CHECKBOX_OP: 'checkbox',
-                    EFI_IFR_STRING_OP: 'string', 0xF: 'ReadOnly'}
-SetupTypeBinDict = {0x5: 'oneof', 0x7: 'numeric', 0x6: 'checkbox', 0x8: 'string', 0xF: 'ReadOnly'}
-SetupTypeBin2ValDict = {0x5: EFI_IFR_ONE_OF_OP, 0x7: EFI_IFR_NUMERIC_OP, 0x6: EFI_IFR_CHECKBOX_OP,
-                        0x8: EFI_IFR_STRING_OP}
-OldBinNvarNameDict = {0: 'Setup', 1: 'ServerMgmt'}
-OldBinNvarNameDictPly = {0: 'Setup', 1: 'SocketIioConfig', 2: 'SocketCommonRcConfig', 3: 'SocketMpLinkConfig',
-                         4: 'SocketMemoryConfig', 5: 'SocketMiscConfig', 6: 'SocketPowerManagementConfig',
-                         7: 'SocketProcessorCoreConfig', 8: 'SvOtherConfiguration', 9: 'SvPchConfiguration'}
 
 
 def get_xml():
