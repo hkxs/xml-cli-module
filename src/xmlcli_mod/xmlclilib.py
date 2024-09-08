@@ -37,11 +37,7 @@ log = logging.getLogger(__name__)
 
 cliaccess = None
 
-TempFolder = configurations.OUT_DIR
-
-
 gDramSharedMbAddr = 0
-InterfaceType = configurations.ACCESS_METHOD
 
 SHAREDMB_SIG1 = 0xBA5EBA11
 SHAREDMB_SIG2 = 0xBA5EBA11
@@ -101,7 +97,7 @@ class CliLib:
 
         :return: dictionary structure {access_method_name: config_file}
         """
-        return configurations.ACCESS_METHODS
+        return {"linux": "access/linux/linux.ini"}
 
     def set_cli_access(self, access_request=None):
         access_methods = self.get_available_access_methods()
@@ -114,7 +110,7 @@ class CliLib:
 def set_cli_access(req_access=None):
     global cliaccess
     if not req_access:
-        req_access = InterfaceType
+        req_access = "Linux"
     if not cliaccess:
         cli_instance = CliLib(req_access.lower())
         cliaccess = cli_instance.access_instance
@@ -387,7 +383,7 @@ def GetDramMbAddr():
 
     :return:
     """
-    global gDramSharedMbAddr, InterfaceType, LastErrorSig
+    global gDramSharedMbAddr, LastErrorSig
     LastErrorSig = 0x0000
     InitInterface()
     writeIO(0x72, 1, 0xF0)  # Write a byte to cmos offset 0xF0
