@@ -27,7 +27,6 @@ import defusedxml.ElementTree as ET
 from pathlib import Path
 from xml.etree.ElementTree import ElementTree
 
-from xmlcli_mod.common import utils
 from xmlcli_mod.common import configurations
 from xmlcli_mod.common.errors import BiosKnobsDataUnavailable
 from xmlcli_mod.common.errors import InvalidAccessMethod
