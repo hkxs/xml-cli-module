@@ -222,39 +222,6 @@ def _checkCliAccess():
     set_cli_access()
 
 
-def haltcpu(delay=0):
-    """
-    This function will check the CPU state only when Interface type is
-    debug interface used between host and target.
-
-    If target CPU is already halted then this function
-    will return without taking any action.
-    If target CPU is running it will issue `halt()` command.
-
-    :param delay: wait time in seconds for command execution
-    :return: status of halt action from interface
-    """
-    global cliaccess
-    _checkCliAccess()
-    return cliaccess.halt_cpu(delay)
-
-
-def runcpu():
-    """
-    This function will check the CPU state only when Interface type is
-    debug interface used between host and target.
-
-    If target CPU is already halted then this function
-    will return without taking any action.
-    If target CPU is running it will issue `go()` command.
-
-    :return: status of run cpu action from interface
-    """
-    global cliaccess
-    _checkCliAccess()
-    return cliaccess.run_cpu()
-
-
 def InitInterface():
     global cliaccess
     _checkCliAccess()
@@ -265,31 +232,6 @@ def CloseInterface():
     global cliaccess
     _checkCliAccess()
     return cliaccess.close_interface()
-
-
-def warmreset():
-    """
-    Resets system without actually interrupting system power.
-    Value `0x06` to PCI register `0xCF9` is written to achieve the warm reset.
-
-    :return:
-    """
-    global cliaccess
-    _checkCliAccess()
-    return cliaccess.warm_reset()
-
-
-def coldreset():
-    """
-    Cold reset is one of the type of system reboot whereby the power to the system
-    is physically turned OFF and back ON again.
-    Value `0x0E` to PCI register `0xCF9` is written to achieve the cold reset.
-
-    :return:
-    """
-    global cliaccess
-    _checkCliAccess()
-    return cliaccess.cold_reset()
 
 
 def read_mem_block(address, size):
@@ -323,85 +265,6 @@ def memsave(filename, address, size):
     return cliaccess.mem_save(filename, address, size)
 
 
-def memdump(address, size, unit=1):
-    """
-    Dumps the memory content of given byte size in
-    respective units on to the console
-
-    :param address: address from which data is to be copied
-    :param size: total amount of data to be read
-    :param unit: unit length in which data to be displayed (choices are: 1|2|4|8)
-    :return:
-    """
-    TempDataBinFile = os.path.join(os.path.dirname(KnobsXmlFile), 'MemData_%X.bin' % address)
-    memsave(TempDataBinFile, address, size)
-    with open(TempDataBinFile, 'rb') as TempData:
-        ListBuff = list(TempData.read())
-    log.debug('________________________________________________________________________________')
-    if unit == 1:
-        log.debug('             Address | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | A | B | C | D | E | F |')
-        log.debug('---------------|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|')
-    elif unit == 2:
-        log.debug(
-            '             Address |       0       |       2       |       4       |       6       |       8       |       A       |       C       |       E       |')
-        log.debug('---------------|-------|-------|-------|-------|-------|-------|-------|-------|')
-    elif unit == 4:
-        log.debug(
-            '             Address |               0               |               4               |               8               |               C               |')
-        log.debug('---------------|---------------|---------------|---------------|---------------|')
-    elif unit == 8:
-        log.debug(
-            '             Address |                               0                               |                               8                               |')
-        log.debug('---------------|-------------------------------|-------------------------------|')
-    CurAddr = address
-    for count in range(0, int(size / 0x10)):
-        Value = ListBuff[(count * 0x10):((count * 0x10) + 16)]
-        if unit == 1:
-            log.debug(
-                ' %13s |%02X  %02X    %02X    %02X    %02X    %02X    %02X    %02X    %02X    %02X    %02X    %02X    %02X    %02X    %02X    %02X |' % (
-                ('0x%lX' % CurAddr), Value[0], Value[1], Value[2], Value[3], Value[4], Value[5], Value[6], Value[7],
-                Value[8], Value[9], Value[10], Value[11], Value[12], Value[13], Value[14], Value[15]))
-        elif unit == 2:
-            log.debug(
-                ' %13s |0x%02X%02X    0x%02X%02X  0x%02X%02X  0x%02X%02X  0x%02X%02X  0x%02X%02X  0x%02X%02X  0x%02X%02X |' % (
-                ('0x%lX' % CurAddr), Value[1], Value[0], Value[3], Value[2], Value[5], Value[4], Value[7], Value[6],
-                Value[9], Value[8], Value[11], Value[10], Value[13], Value[12], Value[15], Value[14]))
-        elif unit == 4:
-            log.debug(
-                ' %13s |   0x%02X%02X%02X%02X          0x%02X%02X%02X%02X          0x%02X%02X%02X%02X          0x%02X%02X%02X%02X  |' % (
-                ('0x%lX' % CurAddr), Value[3], Value[2], Value[1], Value[0], Value[7], Value[6], Value[5], Value[4],
-                Value[11], Value[10], Value[9], Value[8], Value[15], Value[14], Value[13], Value[12]))
-        elif unit == 8:
-            log.debug(
-                ' %13s |           0x%02X%02X%02X%02X%02X%02X%02X%02X                         0x%02X%02X%02X%02X%02X%02X%02X%02X           |' % (
-                ('0x%lX' % CurAddr), Value[7], Value[6], Value[5], Value[4], Value[3], Value[2], Value[1], Value[0],
-                Value[15], Value[14], Value[13], Value[12], Value[11], Value[10], Value[9], Value[8]))
-        CurAddr = CurAddr + 0x10
-
-    RemBytes = int(size % 0x10)
-    if (RemBytes):
-        Value = ListBuff[(CurAddr - address):((CurAddr - address) + RemBytes)]
-        ValueStr = ''
-        if (unit == 1):
-            for cnt in range(0x0, RemBytes):
-                ValueStr = ValueStr + '%02X  ' % Value[cnt]
-        elif (unit == 2):
-            for cnt in range(0x0, int(RemBytes / 2)):
-                Index = cnt * 2
-                ValueStr = ValueStr + '0x%02X%02X  ' % (Value[Index + 1], Value[Index])
-        elif (unit == 4):
-            for cnt in range(0x0, int(RemBytes / 4)):
-                Index = cnt * 4
-                ValueStr = ValueStr + '     0x%02X%02X%02X%02X   ' % (
-                Value[Index + 3], Value[Index + 2], Value[Index + 1], Value[Index])
-        elif (unit == 8):
-            for cnt in range(0x0, int(RemBytes / 8)):
-                Index = cnt * 8
-                ValueStr = ValueStr + '             0x%02X%02X%02X%02X%02X%02X%02X%02X          ' % (
-                Value[Index + 7], Value[Index + 6], Value[Index + 5], Value[Index + 4], Value[Index + 3],
-                Value[Index + 2], Value[Index + 1], Value[Index])
-        log.debug(f' {(f"0x{CurAddr:X}"):>13} |{ValueStr}')
-
 
 def memread(address, size):
     """
@@ -434,18 +297,6 @@ def memwrite(address, size, value):
     _checkCliAccess()
     return cliaccess.mem_write(address, size, value)
 
-
-def load_data(filename, address):
-    """
-    Loads the given file data to the desired memory address
-
-    :param filename: name of file from which data has to be copied
-    :param address: address on which data has to be copied
-    :return:
-    """
-    global cliaccess
-    _checkCliAccess()
-    return cliaccess.load_data(filename, address)
 
 
 def readIO(address, size):
@@ -488,54 +339,6 @@ def triggerSMI(SmiVal):
     _checkCliAccess()
     return cliaccess.trigger_smi(SmiVal)
 
-
-def ReadMSR(Ap, MSR_Addr):
-    global cliaccess
-    _checkCliAccess()
-    return int(cliaccess.read_msr(Ap, MSR_Addr))
-
-
-def WriteMSR(Ap, MSR_Addr, MSR_Val):
-    global cliaccess
-    _checkCliAccess()
-    return cliaccess.write_msr(Ap, MSR_Addr, MSR_Val)
-
-
-def ReadSmbase():
-    """
-    Reads the SMBASE address value. Objective is achieved by reading value of
-    MSR 0x171
-
-    :return:
-    """
-    global cliaccess
-    _checkCliAccess()
-    return int(cliaccess.read_sm_base())
-
-
-def RemoveFile(file_name):
-    """
-    Remove/delete file after checking if it really exists
-
-    :param file_name: name of file to be removed
-    :return:
-    """
-    if os.path.isfile(file_name):
-        os.remove(file_name)
-
-
-def RenameFile(file_name, new_file_name):
-    """
-    File to be renamed
-    If new file name exists then it will be removed
-
-    :param file_name: original file name
-    :param new_file_name: new file name
-    :return:
-    """
-    if os.path.isfile(new_file_name):
-        os.remove(new_file_name)
-    os.rename(file_name, new_file_name)
 
 
 def readcmos(register_address):
@@ -601,29 +404,6 @@ def clearcmos():
     writeIO(0xCFC, 2, rtc_value)  # set cmos bad in PCH RTC register
 
 
-# read all Cmos locations from 0 to 0xFF
-def readallcmos():
-    Value = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    log.debug('Reading CMOS')
-    log.debug('      |--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|')
-    log.debug('Addr|00|01|02|03|04|05|06|07|08|09|0A|0B|0C|0D|0E|0F|')
-    log.debug('----|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|')
-    for i in range(0x0, 0x8, 1):
-        for j in range(0x0, 0x10, 1):
-            writeIO(0x70, 1, ((i << 4) + j))
-            Value[j] = readIO(0x71, 1)
-        log.debug(
-            f' {(i << 4):2X} |{Value[0]:2X} {Value[1]:2X} {Value[2]:2X} {Value[3]:2X} {Value[4]:2X} {Value[5]:2X} {Value[6]:2X} {Value[7]:2X} {Value[8]:2X} {Value[9]:2X} {Value[10]:2X} {Value[11]:2X} {Value[12]:2X} {Value[13]:2X} {Value[14]:2X} {Value[15]:2X}|')
-    log.debug(' ---|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|')
-    for i in range(0x8, 0x10, 1):
-        for j in range(0x0, 0x10, 1):
-            writeIO(0x72, 1, ((i << 4) + j))
-            Value[j] = readIO(0x73, 1)
-        log.debug(
-            f' {(i << 4):2X} |{Value[0]:2X} {Value[1]:2X} {Value[2]:2X} {Value[3]:2X} {Value[4]:2X} {Value[5]:2X} {Value[6]:2X} {Value[7]:2X} {Value[8]:2X} {Value[9]:2X} {Value[10]:2X} {Value[11]:2X} {Value[12]:2X} {Value[13]:2X} {Value[14]:2X} {Value[15]:2X}|')
-    log.debug(' ---|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|')
-
-
 def ReadBuffer(inBuffer, offset, size, inType):
     """
     This function reads the desired format of data of specified size
@@ -666,9 +446,6 @@ def ReadList(inBuffer, offset, size, inType=HEX):
     return int(''.join(value_buffer[::-1]), 16)
 
 
-def ListInsertVal(Val):
-    return Val & 0xFF
-
 
 def HexLiFy(String):
     return String.encode().hex()
@@ -676,13 +453,6 @@ def HexLiFy(String):
 
 def UnHexLiFy(Integer):
     return binascii.unhexlify((hex(Integer)[2:]).strip('L')).decode()
-
-
-def ReadBios(BiosBinListBuff, BinSize, Addr, Size):
-    if (BiosBinListBuff == 0):  # Online mode
-        return memread(Addr, Size)
-    else:  # Offline mode
-        return ReadList(BiosBinListBuff, (BinSize - (0x100000000 - Addr)), Size)
 
 
 def GetCliSpecVersion(DramMbAddr):
