@@ -62,8 +62,6 @@ ENCODING = "utf-8"
 ACCESS_METHOD = "linux"
 ACCESS_METHODS = {"linux": "access/linux/linux.ini"}
 PERFORMANCE = False
-# BIOS Knobs Configuration file
-BIOS_KNOBS_CONFIG = os.path.join(XMLCLI_DIR, 'cfg', 'BiosKnobs.ini')
 
 OUT_DIR = TEMP_DIR
 os.makedirs(OUT_DIR, exist_ok=True)
