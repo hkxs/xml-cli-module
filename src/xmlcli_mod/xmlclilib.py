@@ -373,6 +373,9 @@ def IsLegMbSigValid(DramMbAddr):
     SharedMbSig2 = memread((DramMbAddr + SHAREDMB_SIG2_OFF), 4)
     if (SharedMbSig1 == SHAREDMB_SIG1) and (SharedMbSig2 == SHAREDMB_SIG2):
         cli_spec_version = GetCliSpecVersion(DramMbAddr)
+        ShareMbEntry1Sig = memread((DramMbAddr + LEGACYMB_SIG_OFF), 4)
+        if (ShareMbEntry1Sig == LEGACYMB_SIG):
+            FixLegXmlOffset(DramMbAddr)
         return cli_spec_version
     return False
 
