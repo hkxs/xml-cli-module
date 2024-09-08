@@ -323,7 +323,6 @@ def ReadBuffer(inBuffer, offset, size, inType):
         value_string = "".join(chr(value_buffer[i]) for i in range(len(value_buffer)))
         return value_string
     if inType == HEX:
-        # value_string = "".join(f"{value_buffer[i]:02x}" for i in range(len(value_buffer)))
         for count in range(len(value_buffer)):
             value_string = f"{value_buffer[count]:02x}" + value_string
         return int(value_string, 16)
