@@ -523,11 +523,13 @@ def get_xml():
     dram_shared_memory_buf = read_mem_block(dram_mb_addr, 0x200)  # Read/save parameter buffer
     xml_addr, xml_size = readxmldetails(dram_shared_memory_buf)  # read GBTG XML address and Size
 
+    logger.debug(f"XML Addr={xml_addr:#x}, XML Size={xml_size:#x}")
     if not xml_addr:
         CloseInterface()
         raise BiosKnobsDataUnavailable()
 
     if isxmlvalid(xml_addr, xml_size):
+        logger.debug("Valid XML data")
         xml_bytearray = read_mem_block(xml_addr, int(xml_size))
         defused_xml = ET.fromstring(xml_bytearray.decode())
 
