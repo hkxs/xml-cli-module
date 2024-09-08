@@ -18,10 +18,9 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
+
 import configparser
 import os
-import sys
-import tempfile
 
 
 def config_read(config_file):
@@ -48,11 +47,4 @@ CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 XMLCLI_DIR = os.path.dirname(CURRENT_DIRECTORY)
 
 # Configuration parser object
-
 ENCODING = "utf-8"
-
-STATUS_CODE_RECORD_FILE = os.path.join(XMLCLI_DIR, "messages.json")
-
-# Reading other configuration parameters
-CLEANUP = True
-ENABLE_EXPERIMENTAL_FEATURES = True
