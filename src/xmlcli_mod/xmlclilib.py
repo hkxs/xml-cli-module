@@ -87,8 +87,7 @@ class CliLib:
             access_module_path = f"xmlcli_mod.access.{access_request}.{os.path.splitext(access_file)[0]}"
             access_file = importlib.import_module(access_module_path)  # Import access method
             method_class = self.access_config.get(access_request.upper(), "method_class")
-            self.access_instance = getattr(access_file, method_class)(
-                access_request)  # create instance of Access method class
+            self.access_instance = getattr(access_file, method_class)(access_request)  # create instance of Access method class
         else:
             raise InvalidAccessMethod(access_request)
 
@@ -443,9 +442,11 @@ def readxmldetails(dram_shared_mailbox_buffer):
     SharedMbSig2 = ReadBuffer(dram_shared_mailbox_buffer, SHAREDMB_SIG2_OFF, 4, HEX)
     GBT_XML_Addr = 0
     GBT_XML_Size = 0
+    logger.debug(f"{SharedMbSig1=}, {SharedMbSig2=}")
     if (SharedMbSig1 == SHAREDMB_SIG1) and (SharedMbSig2 == SHAREDMB_SIG2):
         ShareMbEntry1Sig = ReadBuffer(dram_shared_mailbox_buffer, LEGACYMB_SIG_OFF, 4, HEX)
         if ShareMbEntry1Sig == LEGACYMB_SIG:
+            logger.debug(f"Legacy MB signature found: {ShareMbEntry1Sig}")
             LegMbOffset = ReadBuffer(dram_shared_mailbox_buffer, LEGACYMB_OFF, 4, HEX)
             if LegMbOffset > 0xFFFF:
                 GBT_XML_Addr = memread(LegMbOffset + LEGACYMB_XML_OFF, 4) + 4
@@ -468,6 +469,7 @@ def isxmlvalid(gbt_xml_address, gbt_xml_size):
         SystemStart = ReadBuffer(temp_buffer, 0, 0x08, ASCII)
         temp_buffer = read_mem_block(gbt_xml_address + gbt_xml_size - 0xB, 0x09)  # Read/save parameter buffer
         SystemEnd = ReadBuffer(temp_buffer, 0, 0x09, ASCII)
+        logger.debug(f"{SystemStart=}, {SystemEnd=}")
         if (SystemStart == "<SYSTEM>") and (SystemEnd == "</SYSTEM>"):
             return True
         else:
