@@ -34,7 +34,6 @@ from xmlcli_mod.common.errors import InvalidAccessMethod
 from xmlcli_mod.common.errors import InvalidXmlData
 from xmlcli_mod.common.errors import XmlCliNotSupported
 
-
 log = logging.getLogger(__name__)
 
 cliaccess = None
@@ -158,7 +157,6 @@ Xml_Sanitization_Mapping = {0x00: 0x20, 0x01: 0x20, 0x02: 0x20, 0x03: 0x20, 0x04
 BITWISE_KNOB_PREFIX = 0xC0000
 
 
-
 class CliLib:
     def __init__(self, access_request):
         access_methods = self.get_available_access_methods()
@@ -170,7 +168,8 @@ class CliLib:
             access_module_path = f"xmlcli_mod.access.{access_request}.{os.path.splitext(access_file)[0]}"
             access_file = importlib.import_module(access_module_path)  # Import access method
             method_class = self.access_config.get(access_request.upper(), "method_class")
-            self.access_instance = getattr(access_file, method_class)(access_request)  # create instance of Access method class
+            self.access_instance = getattr(access_file, method_class)(
+                access_request)  # create instance of Access method class
         else:
             raise InvalidAccessMethod(access_request)
 
@@ -246,7 +245,6 @@ def memsave(filename, address, size):
     return cliaccess.mem_save(filename, address, size)
 
 
-
 def memread(address, size):
     """
     This function reads data from specific memory.
@@ -277,7 +275,6 @@ def memwrite(address, size, value):
     global cliaccess
     _checkCliAccess()
     return cliaccess.mem_write(address, size, value)
-
 
 
 def readIO(address, size):
@@ -319,7 +316,6 @@ def triggerSMI(SmiVal):
     global cliaccess
     _checkCliAccess()
     return cliaccess.trigger_smi(SmiVal)
-
 
 
 def readcmos(register_address):
@@ -425,12 +421,11 @@ def GetCliSpecVersion(DramMbAddr):
     CliSpecMinorVersion = memread((DramMbAddr + CLI_SPEC_VERSION_MINOR_OFF), 1)
     CLI_REQ_READY_SIG = 0xC001C001
     CLI_RES_READY_SIG = 0xCAFECAFE
-    if (CliSpecRelVersion == 0):
-        if (CliSpecMajorVersion >= 7):
+    if CliSpecRelVersion == 0:
+        if CliSpecMajorVersion >= 7:
             CLI_REQ_READY_SIG = 0xD055C001
             CLI_RES_READY_SIG = 0xD055CAFE
     else:
-        LEGACYMB_XML_OFF = 0x50
         CLI_REQ_READY_SIG = 0xD055C001
         CLI_RES_READY_SIG = 0xD055CAFE
     return f'{CliSpecRelVersion:d}.{CliSpecMajorVersion:d}.{CliSpecMinorVersion:d}'
@@ -439,14 +434,14 @@ def GetCliSpecVersion(DramMbAddr):
 def FixLegXmlOffset(DramMbAddr):
     global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion, LEGACYMB_XML_OFF
     LEGACYMB_XML_OFF = 0x0C
-    if (CliSpecRelVersion == 0):
-        if (CliSpecMajorVersion >= 7):
+    if CliSpecRelVersion == 0:
+        if CliSpecMajorVersion >= 7:
             LEGACYMB_XML_OFF = 0x50
-            if ((CliSpecMajorVersion == 7) and (CliSpecMinorVersion == 0)):
+            if (CliSpecMajorVersion == 7) and (CliSpecMinorVersion == 0):
                 LegMbOffset = memread((DramMbAddr + LEGACYMB_OFF), 4)
-                if (LegMbOffset < 0xFFFF):
+                if LegMbOffset < 0xFFFF:
                     LegMbOffset = DramMbAddr + LegMbOffset
-                if (memread((LegMbOffset + 0x4C), 4) == 0):
+                if memread((LegMbOffset + 0x4C), 4) == 0:
                     LEGACYMB_XML_OFF = 0x50
                 else:
                     LEGACYMB_XML_OFF = 0x4C
@@ -458,14 +453,14 @@ def IsLegMbSigValid(DramMbAddr):
     global CliSpecRelVersion, CliSpecMajorVersion, MerlinxXmlCliEnableAddr
     SharedMbSig1 = memread((DramMbAddr + SHAREDMB_SIG1_OFF), 4)
     SharedMbSig2 = memread((DramMbAddr + SHAREDMB_SIG2_OFF), 4)
-    if ((SharedMbSig1 == SHAREDMB_SIG1) and (SharedMbSig2 == SHAREDMB_SIG2)):
+    if (SharedMbSig1 == SHAREDMB_SIG1) and (SharedMbSig2 == SHAREDMB_SIG2):
         cli_spec_version = GetCliSpecVersion(DramMbAddr)
         ShareMbEntry1Sig = memread((DramMbAddr + LEGACYMB_SIG_OFF), 4)
-        if (ShareMbEntry1Sig == LEGACYMB_SIG):
+        if ShareMbEntry1Sig == LEGACYMB_SIG:
             FixLegXmlOffset(DramMbAddr)
-            if ((CliSpecRelVersion >= 0) and (CliSpecMajorVersion >= 8)):
+            if (CliSpecRelVersion >= 0) and (CliSpecMajorVersion >= 8):
                 LegMbOffset = int(memread(DramMbAddr + LEGACYMB_OFF, 4))
-                if (LegMbOffset > 0xFFFF):
+                if LegMbOffset > 0xFFFF:
                     MerlinxXmlCliEnableAddr = LegMbOffset + MERLINX_XML_CLI_ENABLED_OFF
                 else:
                     MerlinxXmlCliEnableAddr = DramMbAddr + LegMbOffset + MERLINX_XML_CLI_ENABLED_OFF
@@ -473,7 +468,7 @@ def IsLegMbSigValid(DramMbAddr):
     return False
 
 
-def GetDramMbAddr(display_spec=True):
+def GetDramMbAddr():
     """
     Read DRAM shared Mailbox from CMOS location 0xBB [23:16] & 0xBC [31:24]
 
@@ -517,7 +512,7 @@ def GetDramMbAddr(display_spec=True):
 
 def verify_xmlcli_support():
     InitInterface()
-    if not GetDramMbAddr() :
+    if not GetDramMbAddr():
         raise XmlCliNotSupported()
     log.debug('XmlCli is Enabled..')
     CloseInterface()
@@ -588,18 +583,18 @@ def IsXmlGenerated():
     DRAM_MbAddr = GetDramMbAddr()  # Get DRam Mailbox Address from Cmos.
     log.debug(f'CLI Spec Version = {GetCliSpecVersion(DRAM_MbAddr)}')
     log.debug(f'DRAM_MbAddr = 0x{DRAM_MbAddr:X}')
-    if (DRAM_MbAddr == 0x0):
+    if DRAM_MbAddr == 0x0:
         log.error('Dram Shared Mailbox not Valid, hence exiting')
         CloseInterface()
         return 1
     DramSharedMBbuf = read_mem_block(DRAM_MbAddr, 0x200)  # Read/save parameter buffer
-    (XmlAddr, XmlSize) = readxmldetails(DramSharedMBbuf)  # read GBTG XML address and Size
-    if (XmlAddr == 0):
+    XmlAddr, XmlSize = readxmldetails(DramSharedMBbuf)  # read GBTG XML address and Size
+    if XmlAddr == 0:
         log.error('Platform Configuration XML not yet generated, hence exiting')
         CloseInterface()
         LastErrorSig = 0x8AD0  # Xml Address is Zero
         return 1
-    if (isxmlvalid(XmlAddr, XmlSize)):
+    if isxmlvalid(XmlAddr, XmlSize):
         log.debug('Xml Is Generated and it is Valid')
     else:
         log.error(f'XML is not valid or not yet generated XmlAddr = 0x{XmlAddr:X}, XmlSize = 0x{XmlSize:X}')
@@ -655,7 +650,8 @@ def get_xml():
         xml_data = ElementTree(defused_xml)
     else:
         CloseInterface()
-        raise InvalidXmlData(f'XML is not valid or not yet generated xml_addr = 0x{xml_addr:X}, xml_size = 0x{xml_size:X}')
+        raise InvalidXmlData(
+            f'XML is not valid or not yet generated xml_addr = 0x{xml_addr:X}, xml_size = 0x{xml_size:X}')
 
     CloseInterface()
     return xml_data
@@ -692,12 +688,12 @@ def getEfiCompatibleTableBase():
     for Index in range(0, 0x1000, 0x10):
         Sig1 = memread(0xE0000 + Index, 4)
         Sig2 = memread(0xF0000 + Index, 4)
-        if (Sig1 == EfiComTblSig):
-            BaseAddress = 0xE0000 + Index;
+        if Sig1 == EfiComTblSig:
+            BaseAddress = 0xE0000 + Index
             log.debug(f'Found EfiCompatibleTable Signature at 0x{BaseAddress:X}')
             return BaseAddress
-        if (Sig2 == EfiComTblSig):
-            BaseAddress = 0xF0000 + Index;
+        if Sig2 == EfiComTblSig:
+            BaseAddress = 0xF0000 + Index
             log.debug(f'Found EfiCompatibleTable Signature at 0x{BaseAddress:X}')
             return BaseAddress
     log.debug(hex(Index))
@@ -708,7 +704,7 @@ def getEfiCompatibleTableBase():
 def SearchForSystemTableAddress():
     for Address in range(0x20000000, 0xE0000000, 0x400000):  # EFI_SYSTEM_TABLE_POINTER address is 4MB aligned
         Signature = memread(Address, 8)
-        if (Signature == 0x5453595320494249):  # EFI System Table Signature = 'IBI SYST'
+        if Signature == 0x5453595320494249:  # EFI System Table Signature = 'IBI SYST'
             Address = memread((Address + 8), 8)
             return Address
     return 0
@@ -720,13 +716,13 @@ def readDramMbAddrFromEFI():
     DramSharedMailBoxGuidHigh = 0x3379C48E6BC1E998
     log.debug('Searching for Dram Shared Mailbox address from gST EfiConfigTable..')
     gST = SearchForSystemTableAddress()
-    if (gST == 0):
+    if gST == 0:
         EfiCompatibleTableBase = getEfiCompatibleTableBase()
-        if (EfiCompatibleTableBase == 0):
+        if EfiCompatibleTableBase == 0:
             return 0
         gST = memread(EfiCompatibleTableBase + 0x14, 4)
     Signature = memread(gST, 8)
-    if (Signature != 0x5453595320494249):  # EFI System Table Signature = 'IBI SYST'
+    if Signature != 0x5453595320494249:  # EFI System Table Signature = 'IBI SYST'
         return 0
     log.debug(
         f'EFI SYSTEM TABLE Address = 0x{gST:X}  Signature = \"{UnHexLiFy(Signature)[::-1]}\"    Revision = {memread(gST + 8, 2):d}.{memread(gST + 0xA, 2):d}')
@@ -734,9 +730,9 @@ def readDramMbAddrFromEFI():
     FirmwarePtr = memread(gST + 0x18, 8)
     FirmwareRevision = memread(gST + 0x20, 4)
     BiosStr = ''
-    while (1):
+    while 1:
         Value = int(memread(FirmwarePtr + count, 2))
-        if (Value == 0):
+        if Value == 0:
             break
         BiosStr = BiosStr + chr((Value & 0xFF))
         count = count + 2
@@ -750,7 +746,7 @@ def readDramMbAddrFromEFI():
     for Index in range(0, EfiConfigTblEntries):
         GuidLow = memread(EfiConfigTbl + Offset, 8)
         GuidHigh = memread(EfiConfigTbl + 8 + Offset, 8)
-        if ((GuidLow == DramSharedMailBoxGuidLow) and (GuidHigh == DramSharedMailBoxGuidHigh)):
+        if (GuidLow == DramSharedMailBoxGuidLow) and (GuidHigh == DramSharedMailBoxGuidHigh):
             DramMailboxAddr = int(memread(EfiConfigTbl + 16 + Offset, 8))
             log.info(f'Found Dram Shared MailBox Address = 0x{DramMailboxAddr:X} from EfiConfigTable')
             break
@@ -779,7 +775,7 @@ def PrintE820Table():
     log.debug(',,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,')
     log.debug('E820[no]: Start Block Address ---- End Block Address , Type = Mem Type')
     log.debug('``````````````````````````````````````````````````````````````````````')
-    while (1):
+    while 1:
         BaseAddr = memread(E820Ptr + Offset, 8)
         Length = memread(E820Ptr + Offset + 8, 8)
         Type = memread(E820Ptr + Offset + 16, 4)
