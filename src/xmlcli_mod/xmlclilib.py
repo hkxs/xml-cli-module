@@ -385,8 +385,7 @@ def GetDramMbAddr():
 
     :return:
     """
-    global gDramSharedMbAddr, LastErrorSig
-    LastErrorSig = 0x0000
+    global gDramSharedMbAddr
     InitInterface()
     writeIO(0x72, 1, 0xF0)  # Write a byte to cmos offset 0xF0
     result0 = int(readIO(0x73, 1) & 0xFF)  # Read a byte from cmos offset 0xBB [23:16]
@@ -416,7 +415,6 @@ def GetDramMbAddr():
             logger.debug(f'DRAM_MbAddr = 0x{dram_shared_mb_address:X}')
             return dram_shared_mb_address
     CloseInterface()
-    LastErrorSig = 0xD9FD  # Dram Shared MailBox Not Found
 
     return 0
 
@@ -466,8 +464,6 @@ def isxmlvalid(gbt_xml_address, gbt_xml_size):
     :param gbt_xml_size: Size of GBT XML
     :return:
     """
-    global LastErrorSig
-    LastErrorSig = 0x0000
     try:
         temp_buffer = read_mem_block(gbt_xml_address, 0x08)  # Read/save parameter buffer
         SystemStart = ReadBuffer(temp_buffer, 0, 0x08, ASCII)
@@ -476,19 +472,15 @@ def isxmlvalid(gbt_xml_address, gbt_xml_size):
         if (SystemStart == "<SYSTEM>") and (SystemEnd == "</SYSTEM>"):
             return True
         else:
-            LastErrorSig = 0x8311  # Xml data is in-valid
             return False
     except Exception as e:
         logger.error(f'Exception detected when determining if xml is valid.\n {e}')
-        LastErrorSig = 0xEC09  # Exception detected
         return False
 
 
 # TODO this seems helpful in some way, it can/should be used to determine if
 # everything is setup properly on the platform
 def IsXmlGenerated():
-    global LastErrorSig
-    LastErrorSig = 0x0000
     Status = 0
     InitInterface()
     DRAM_MbAddr = GetDramMbAddr()  # Get DRam Mailbox Address from Cmos.
@@ -503,7 +495,6 @@ def IsXmlGenerated():
     if XmlAddr == 0:
         logger.error('Platform Configuration XML not yet generated, hence exiting')
         CloseInterface()
-        LastErrorSig = 0x8AD0  # Xml Address is Zero
         return 1
     if isxmlvalid(XmlAddr, XmlSize):
         logger.debug('Xml Is Generated and it is Valid')
@@ -570,8 +561,6 @@ def getEfiCompatibleTableBase():
     Use-case would be to find DramMailbox in legacy way
     :return:
     """
-    global LastErrorSig
-    LastErrorSig = 0x0000
     EfiComTblSig = 0x24454649
     for Index in range(0, 0x1000, 0x10):
         Sig1 = memread(0xE0000 + Index, 4)
@@ -585,7 +574,6 @@ def getEfiCompatibleTableBase():
             logger.debug(f'Found EfiCompatibleTable Signature at 0x{BaseAddress:X}')
             return BaseAddress
     logger.debug(hex(Index))
-    LastErrorSig = 0xEFC9  # EfiCompatibleTable Not Found
     return 0
 
 
