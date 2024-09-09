@@ -1,15 +1,30 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-__author__ = "Gahan Saraiya"
+#
+#  Copyright 2024 Hkxs
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files (the “Software”), to deal
+#  in the Software without restriction, including without limitation the rights
+#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#  copies of the Software, and to permit persons to whom the Software is
+#  furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#  SOFTWARE.
 
-# Built-in imports
 import os
 import mmap
 import ctypes
 import binascii
 
-# Custom imports
-from ..base import base
+from xmlcli_mod.access.base import base
 
 __all__ = ["LinuxAccess"]
 
@@ -42,18 +57,6 @@ class LinuxAccess(base.BaseAccess):
       self._write_mem = self.mem_library.mem_write
       self._write_mem.argtypes = (ctypes.c_ulong, ctypes.c_void_p, ctypes.c_size_t)
       self._write_mem.restype = ctypes.c_int
-
-  def halt_cpu(self, delay=0):
-    return 0
-
-  def run_cpu(self):
-    return 0
-
-  def initialize_interface(self):
-    return 0
-
-  def close_interface(self):
-    return 0
 
   def read_port(self, port, size):
     read_val = 0
@@ -204,12 +207,3 @@ class LinuxAccess(base.BaseAccess):
 
   def trigger_smi(self, smi_value):
     self.io(0xB2, 1, smi_value)
-
-  def read_msr(self, Ap, address):
-    return 0
-
-  def write_msr(self, Ap, address, value):
-    return 0
-
-  def read_sm_base(self):
-    return 0
