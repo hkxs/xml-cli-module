@@ -15,14 +15,6 @@ class CliAccessException(Exception):
         super(CliAccessException, self).__init__(self.message)
 
 
-class CliOperationException(CliAccessException):
-    def __init__(self, message="Operation Error!", error_code=None, *args, **kwargs):
-        hints = "\n".join(kwargs.get("hints", []))
-        self.message = "[CliOperationError: {}] {}".format(error_code, message) if error_code else "[CliAccessException] {}".format( message)
-        if hints:
-            self.message += "\nHint: " + hints
-        super(CliOperationException, self).__init__(self.message)
-
 
 class BaseAccess(object):
     def __init__(self, access_name, child_class_directory):
@@ -42,12 +34,7 @@ class BaseAccess(object):
         return data_dump
 
     def read_config(self):
-        try:
-            self.config.read(self.config_file)
-        except AttributeError:
-            # EFI Shell may encounter at this flow while reading config file as .read method uses os.popen which is not available at EFI Python
-            with open(self.config_file, "r") as config_file:
-                self.config._read(config_file, self.config_file)
+        self.config.read(self.config_file)
 
     def halt_cpu(self, delay):
         raise CliAccessException()

@@ -85,7 +85,7 @@ class LinuxAccess(base.BaseAccess):
             mem.close()
             os.close(mem_file_obj)
             return data
-        except Exception as e:  # catch any kind of exception and close /dev/mem file
+        except Exception:  # catch any kind of exception and close /dev/mem file
             mem.close()
             os.close(mem_file_obj)
         if data is None:
@@ -117,7 +117,7 @@ class LinuxAccess(base.BaseAccess):
             mem.close()
             os.close(mem_file_obj)
             return data
-        except Exception as e:  # catch any kind of exception and close /dev/mem file
+        except Exception:  # catch any kind of exception and close /dev/mem file
             mem.close()
             os.close(mem_file_obj)
         if bytes_written == 0:
