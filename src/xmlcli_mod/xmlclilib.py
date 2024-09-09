@@ -445,7 +445,6 @@ def readxmldetails(dram_shared_mailbox_buffer):
     SharedMbSig2 = ReadBuffer(dram_shared_mailbox_buffer, SHAREDMB_SIG2_OFF, 4, HEX)
     GBT_XML_Addr = 0
     GBT_XML_Size = 0
-    logger.debug(f"{SharedMbSig1=}, {SharedMbSig2=}")
     if (SharedMbSig1 == SHAREDMB_SIG1) and (SharedMbSig2 == SHAREDMB_SIG2):
         ShareMbEntry1Sig = ReadBuffer(dram_shared_mailbox_buffer, LEGACYMB_SIG_OFF, 4, HEX)
         if ShareMbEntry1Sig == LEGACYMB_SIG:
@@ -472,7 +471,6 @@ def isxmlvalid(gbt_xml_address, gbt_xml_size):
         SystemStart = ReadBuffer(temp_buffer, 0, 0x08, ASCII)
         temp_buffer = read_mem_block(gbt_xml_address + gbt_xml_size - 0xB, 0x09)  # Read/save parameter buffer
         SystemEnd = ReadBuffer(temp_buffer, 0, 0x09, ASCII)
-        logger.debug(f"{SystemStart=}, {SystemEnd=}")
         if (SystemStart == "<SYSTEM>") and (SystemEnd == "</SYSTEM>"):
             return True
         else:
