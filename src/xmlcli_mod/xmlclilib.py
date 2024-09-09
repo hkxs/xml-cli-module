@@ -36,7 +36,7 @@ from xmlcli_mod.common.errors import XmlCliNotSupported
 
 logger = logging.getLogger(__name__)
 
-cliaccess = None
+cli_access = None
 
 gDramSharedMbAddr = 0
 
@@ -98,30 +98,32 @@ class CliLib:
                 self.access_config = configurations.config_read(access_config)
 
 
-def set_cli_access(req_access=None):
-    global cliaccess
-    if not req_access:
-        req_access = "Linux"
-    if not cliaccess:
+def set_cli_access(req_access):
+    global cli_access
+    if not cli_access:
         logger.debug(f"Using '{req_access.lower()}' access")
         cli_instance = CliLib(req_access.lower())
-        cliaccess = cli_instance.access_instance
+        cli_access = cli_instance.access_instance
 
 
 def _checkCliAccess():
-    set_cli_access()
+    global cli_access
+    if not cli_access:
+        # not going to bother with a custom exception in code that needs to be
+        # refactored
+        raise SystemError("Uninitialized Access")
 
 
 def InitInterface():
-    global cliaccess
+    global cli_access
     _checkCliAccess()
-    return cliaccess.initialize_interface()
+    return cli_access.initialize_interface()
 
 
 def CloseInterface():
-    global cliaccess
+    global cli_access
     _checkCliAccess()
-    return cliaccess.close_interface()
+    return cli_access.close_interface()
 
 
 def read_mem_block(address, size):
@@ -136,9 +138,9 @@ def read_mem_block(address, size):
     :param size: size of block to be read
     :return:
     """
-    global cliaccess
+    global cli_access
     _checkCliAccess()
-    return cliaccess.mem_block(address, size)
+    return cli_access.mem_block(address, size)
 
 
 def memsave(filename, address, size):
@@ -150,9 +152,9 @@ def memsave(filename, address, size):
     :param size: total amount of data to be read
     :return:
     """
-    global cliaccess
+    global cli_access
     _checkCliAccess()
-    return cliaccess.mem_save(filename, address, size)
+    return cli_access.mem_save(filename, address, size)
 
 
 def memread(address, size):
@@ -166,9 +168,9 @@ def memread(address, size):
     :param size: size of the data to be read
     :return:
     """
-    global cliaccess
+    global cli_access
     _checkCliAccess()
-    return int(cliaccess.mem_read(address, size))
+    return int(cli_access.mem_read(address, size))
 
 
 def memwrite(address, size, value):
@@ -182,9 +184,9 @@ def memwrite(address, size, value):
     :param size: size of the data to be read
     :return:
     """
-    global cliaccess
+    global cli_access
     _checkCliAccess()
-    return cliaccess.mem_write(address, size, value)
+    return cli_access.mem_write(address, size, value)
 
 
 def readIO(address, size):
@@ -195,9 +197,9 @@ def readIO(address, size):
     :param size: size of data to be read
     :return: integer value read from address
     """
-    global cliaccess
+    global cli_access
     _checkCliAccess()
-    return int(cliaccess.read_io(address, size))
+    return int(cli_access.read_io(address, size))
 
 
 def writeIO(address, size, value):
@@ -209,9 +211,9 @@ def writeIO(address, size, value):
     :param value: value of data to write on specified address port
     :return:
     """
-    global cliaccess
+    global cli_access
     _checkCliAccess()
-    return cliaccess.write_io(address, size, value)
+    return cli_access.write_io(address, size, value)
 
 
 def triggerSMI(SmiVal):
@@ -223,9 +225,9 @@ def triggerSMI(SmiVal):
     :param SmiVal: Value with which SMI should be triggered
     :return:
     """
-    global cliaccess
+    global cli_access
     _checkCliAccess()
-    return cliaccess.trigger_smi(SmiVal)
+    return cli_access.trigger_smi(SmiVal)
 
 
 def readcmos(register_address):

@@ -20,7 +20,7 @@
 
 
 
-class RootError(OSError):
+class RootError(PermissionError):
     def __init__(self):
         self.message = "XmlCli Module requires Root"
         super().__init__(self.message)
