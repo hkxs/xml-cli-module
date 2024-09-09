@@ -106,7 +106,7 @@ def set_cli_access(req_access):
         cli_access = cli_instance.access_instance
 
 
-def _checkCliAccess():
+def _check_cli_access():
     global cli_access
     if not cli_access:
         # not going to bother with a custom exception in code that needs to be
@@ -114,15 +114,15 @@ def _checkCliAccess():
         raise SystemError("Uninitialized Access")
 
 
-def InitInterface():
+def init_interface():
     global cli_access
-    _checkCliAccess()
+    _check_cli_access()
     return cli_access.initialize_interface()
 
 
-def CloseInterface():
+def close_interface():
     global cli_access
-    _checkCliAccess()
+    _check_cli_access()
     return cli_access.close_interface()
 
 
@@ -139,11 +139,11 @@ def read_mem_block(address, size):
     :return:
     """
     global cli_access
-    _checkCliAccess()
+    _check_cli_access()
     return cli_access.mem_block(address, size)
 
 
-def memsave(filename, address, size):
+def mem_save(filename, address, size):
     """
     Saves the memory block of given byte size to desired file
 
@@ -153,11 +153,11 @@ def memsave(filename, address, size):
     :return:
     """
     global cli_access
-    _checkCliAccess()
+    _check_cli_access()
     return cli_access.mem_save(filename, address, size)
 
 
-def memread(address, size):
+def mem_read(address, size):
     """
     This function reads data from specific memory.
     It can be used to read Maximum `8 bytes` of data.
@@ -169,11 +169,11 @@ def memread(address, size):
     :return:
     """
     global cli_access
-    _checkCliAccess()
+    _check_cli_access()
     return int(cli_access.mem_read(address, size))
 
 
-def memwrite(address, size, value):
+def mem_write(address, size, value):
     """
     This function writes data to specific memory.
     It can be used to write Maximum `8 bytes` of data.
@@ -185,11 +185,11 @@ def memwrite(address, size, value):
     :return:
     """
     global cli_access
-    _checkCliAccess()
+    _check_cli_access()
     return cli_access.mem_write(address, size, value)
 
 
-def readIO(address, size):
+def read_io(address, size):
     """
     Read data from IO ports
 
@@ -198,11 +198,11 @@ def readIO(address, size):
     :return: integer value read from address
     """
     global cli_access
-    _checkCliAccess()
+    _check_cli_access()
     return int(cli_access.read_io(address, size))
 
 
-def writeIO(address, size, value):
+def write_io(address, size, value):
     """
     Write requested value of data to specified IO port
 
@@ -212,11 +212,11 @@ def writeIO(address, size, value):
     :return:
     """
     global cli_access
-    _checkCliAccess()
+    _check_cli_access()
     return cli_access.write_io(address, size, value)
 
 
-def triggerSMI(SmiVal):
+def trigger_smi(SmiVal):
     """
     Triggers the software SMI of desired value. Triggering SMI involves writing
     desired value to port 0x72.
@@ -226,11 +226,11 @@ def triggerSMI(SmiVal):
     :return:
     """
     global cli_access
-    _checkCliAccess()
+    _check_cli_access()
     return cli_access.trigger_smi(SmiVal)
 
 
-def readcmos(register_address):
+def read_cmos(register_address):
     """
     Read CMOS register value
 
@@ -238,12 +238,12 @@ def readcmos(register_address):
     :return:
     """
     upper_register_val = 0x0 if register_address < 0x80 else 0x2
-    writeIO(0x70 + upper_register_val, 1, register_address)
-    value = readIO(0x71 + upper_register_val, 1)
+    write_io(0x70 + upper_register_val, 1, register_address)
+    value = read_io(0x71 + upper_register_val, 1)
     return value
 
 
-def writecmos(register_address, value):
+def write_cmos(register_address, value):
     """
     Write value to CMOS address register
 
@@ -252,15 +252,15 @@ def writecmos(register_address, value):
     :return:
     """
     if register_address < 0x80:
-        writeIO(0x70, 1, register_address)
-        writeIO(0x71, 1, value)
+        write_io(0x70, 1, register_address)
+        write_io(0x71, 1, value)
 
     if register_address >= 0x80:
-        writeIO(0x72, 1, register_address)
-        writeIO(0x73, 1, value)
+        write_io(0x72, 1, register_address)
+        write_io(0x73, 1, value)
 
 
-def clearcmos():
+def clear_cmos():
     """
     Clear all CMOS locations to 0 and set CMOS BAD flag.
 
@@ -274,26 +274,26 @@ def clearcmos():
     """
     logger.warning('Clearing CMOS')
     for i in range(0x0, 0x80, 1):
-        writeIO(0x70, 1, i)
-        writeIO(0x71, 1, 0)
+        write_io(0x70, 1, i)
+        write_io(0x71, 1, 0)
         value = i | 0x80
         if value in (0xF0, 0xF1):
             # skip clearing the CMOS register's which hold Dram Shared MB address.
             continue
-        writeIO(0x72, 1, value)
-        writeIO(0x73, 1, 0)
-    writeIO(0x70, 1, 0x0E)
-    writeIO(0x71, 1, 0xC0)  # set CMOS BAD flag
+        write_io(0x72, 1, value)
+        write_io(0x73, 1, 0)
+    write_io(0x70, 1, 0x0E)
+    write_io(0x71, 1, 0xC0)  # set CMOS BAD flag
 
     rtc_reg_pci_address = ((1 << 31) + (0 << 16) + (31 << 11) + (0 << 8) + 0xA4)
-    writeIO(0xCF8, 4, rtc_reg_pci_address)
-    rtc_value = readIO(0xCFC, 2)
+    write_io(0xCF8, 4, rtc_reg_pci_address)
+    rtc_value = read_io(0xCFC, 2)
     rtc_value = rtc_value | 0x4
-    writeIO(0xCF8, 4, rtc_reg_pci_address)
-    writeIO(0xCFC, 2, rtc_value)  # set cmos bad in PCH RTC register
+    write_io(0xCF8, 4, rtc_reg_pci_address)
+    write_io(0xCFC, 2, rtc_value)  # set cmos bad in PCH RTC register
 
 
-def ReadBuffer(inBuffer, offset, size, inType):
+def read_buffer(inBuffer, offset, size, inType):
     """
     This function reads the desired format of data of specified size
     from the given offset of buffer.
@@ -321,29 +321,29 @@ def ReadBuffer(inBuffer, offset, size, inType):
     return 0
 
 
-def UnHexLiFy(Integer):
+def un_hex_li_fy(Integer):
     return binascii.unhexlify((hex(Integer)[2:]).strip('L')).decode()
 
 
-def GetCliSpecVersion(DramMbAddr):
+def get_cli_spec_version(DramMbAddr):
     global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion
-    CliSpecRelVersion = memread((DramMbAddr + CLI_SPEC_VERSION_RELEASE_OFF), 1) & 0xF
-    CliSpecMajorVersion = memread((DramMbAddr + CLI_SPEC_VERSION_MAJOR_OFF), 2)
-    CliSpecMinorVersion = memread((DramMbAddr + CLI_SPEC_VERSION_MINOR_OFF), 1)
+    CliSpecRelVersion = mem_read((DramMbAddr + CLI_SPEC_VERSION_RELEASE_OFF), 1) & 0xF
+    CliSpecMajorVersion = mem_read((DramMbAddr + CLI_SPEC_VERSION_MAJOR_OFF), 2)
+    CliSpecMinorVersion = mem_read((DramMbAddr + CLI_SPEC_VERSION_MINOR_OFF), 1)
     return f'{CliSpecRelVersion:d}.{CliSpecMajorVersion:d}.{CliSpecMinorVersion:d}'
 
 
-def FixLegXmlOffset(DramMbAddr):
+def fix_leg_xml_offset(DramMbAddr):
     global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion, LEGACYMB_XML_OFF
     LEGACYMB_XML_OFF = 0x0C
     if CliSpecRelVersion == 0:
         if CliSpecMajorVersion >= 7:
             LEGACYMB_XML_OFF = 0x50
             if (CliSpecMajorVersion == 7) and (CliSpecMinorVersion == 0):
-                LegMbOffset = memread((DramMbAddr + LEGACYMB_OFF), 4)
+                LegMbOffset = mem_read((DramMbAddr + LEGACYMB_OFF), 4)
                 if LegMbOffset < 0xFFFF:
                     LegMbOffset = DramMbAddr + LegMbOffset
-                if memread((LegMbOffset + 0x4C), 4) == 0:
+                if mem_read((LegMbOffset + 0x4C), 4) == 0:
                     LEGACYMB_XML_OFF = 0x50
                 else:
                     LEGACYMB_XML_OFF = 0x4C
@@ -351,68 +351,68 @@ def FixLegXmlOffset(DramMbAddr):
         LEGACYMB_XML_OFF = 0x50
 
 
-def IsLegMbSigValid(DramMbAddr):
+def is_leg_mb_sig_valid(DramMbAddr):
     global CliSpecRelVersion, CliSpecMajorVersion
-    SharedMbSig1 = memread((DramMbAddr + SHAREDMB_SIG1_OFF), 4)
-    SharedMbSig2 = memread((DramMbAddr + SHAREDMB_SIG2_OFF), 4)
+    SharedMbSig1 = mem_read((DramMbAddr + SHAREDMB_SIG1_OFF), 4)
+    SharedMbSig2 = mem_read((DramMbAddr + SHAREDMB_SIG2_OFF), 4)
     if (SharedMbSig1 == SHAREDMB_SIG1) and (SharedMbSig2 == SHAREDMB_SIG2):
-        cli_spec_version = GetCliSpecVersion(DramMbAddr)
-        ShareMbEntry1Sig = memread((DramMbAddr + LEGACYMB_SIG_OFF), 4)
+        cli_spec_version = get_cli_spec_version(DramMbAddr)
+        ShareMbEntry1Sig = mem_read((DramMbAddr + LEGACYMB_SIG_OFF), 4)
         if (ShareMbEntry1Sig == LEGACYMB_SIG):
-            FixLegXmlOffset(DramMbAddr)
+            fix_leg_xml_offset(DramMbAddr)
         return cli_spec_version
     return False
 
 
-def GetDramMbAddr():
+def get_dram_mb_addr():
     """
     Read DRAM shared Mailbox from CMOS location 0xBB [23:16] & 0xBC [31:24]
 
     :return:
     """
     global gDramSharedMbAddr
-    InitInterface()
-    writeIO(0x72, 1, 0xF0)  # Write a byte to cmos offset 0xF0
-    result0 = int(readIO(0x73, 1) & 0xFF)  # Read a byte from cmos offset 0xBB [23:16]
-    writeIO(0x72, 1, 0xF1)  # Write a byte to cmos offset 0xF1
-    result1 = int(readIO(0x73, 1) & 0xFF)  # Read a byte from cmos offset 0xBC [31:24]
+    init_interface()
+    write_io(0x72, 1, 0xF0)  # Write a byte to cmos offset 0xF0
+    result0 = int(read_io(0x73, 1) & 0xFF)  # Read a byte from cmos offset 0xBB [23:16]
+    write_io(0x72, 1, 0xF1)  # Write a byte to cmos offset 0xF1
+    result1 = int(read_io(0x73, 1) & 0xFF)  # Read a byte from cmos offset 0xBC [31:24]
     dram_shared_mb_address = int((result1 << 24) | (result0 << 16))  # Get bits [31:24] of the Dram MB address
-    if IsLegMbSigValid(dram_shared_mb_address):
-        CloseInterface()
+    if is_leg_mb_sig_valid(dram_shared_mb_address):
+        close_interface()
         return dram_shared_mb_address
 
-    writeIO(0x70, 1, 0x78)  # Write a byte to cmos offset 0x78
-    result0 = int(readIO(0x71, 1) & 0xFF)  # Read a byte from cmos offset 0xBB [23:16]
-    writeIO(0x70, 1, 0x79)  # Write a byte to cmos offset 0x79
-    result1 = int(readIO(0x71, 1) & 0xFF)  # Read a byte from cmos offset 0xBC [31:24]
+    write_io(0x70, 1, 0x78)  # Write a byte to cmos offset 0x78
+    result0 = int(read_io(0x71, 1) & 0xFF)  # Read a byte from cmos offset 0xBB [23:16]
+    write_io(0x70, 1, 0x79)  # Write a byte to cmos offset 0x79
+    result1 = int(read_io(0x71, 1) & 0xFF)  # Read a byte from cmos offset 0xBC [31:24]
     dram_shared_mb_address = int((result1 << 24) | (result0 << 16))  # Get bits [31:24] of the Dram MB address
-    if IsLegMbSigValid(dram_shared_mb_address):
-        CloseInterface()
-        logger.debug(f'CLI Spec Version = {GetCliSpecVersion(dram_shared_mb_address)}')
+    if is_leg_mb_sig_valid(dram_shared_mb_address):
+        close_interface()
+        logger.debug(f'CLI Spec Version = {get_cli_spec_version(dram_shared_mb_address)}')
         logger.debug(f'DRAM_MbAddr = 0x{dram_shared_mb_address:X}')
         return dram_shared_mb_address
 
     if gDramSharedMbAddr != 0:
         dram_shared_mb_address = int(gDramSharedMbAddr)
-        if IsLegMbSigValid(dram_shared_mb_address):
-            CloseInterface()
-            logger.debug(f'CLI Spec Version = {GetCliSpecVersion(dram_shared_mb_address)}')
+        if is_leg_mb_sig_valid(dram_shared_mb_address):
+            close_interface()
+            logger.debug(f'CLI Spec Version = {get_cli_spec_version(dram_shared_mb_address)}')
             logger.debug(f'DRAM_MbAddr = 0x{dram_shared_mb_address:X}')
             return dram_shared_mb_address
-    CloseInterface()
+    close_interface()
 
     return 0
 
 
 def verify_xmlcli_support():
-    InitInterface()
-    if not GetDramMbAddr():
+    init_interface()
+    if not get_dram_mb_addr():
         raise XmlCliNotSupported()
     logger.debug('XmlCli is Enabled')
-    CloseInterface()
+    close_interface()
 
 
-def readxmldetails(dram_shared_mailbox_buffer):
+def read_xml_details(dram_shared_mailbox_buffer):
     """
     Get XML Base Address & XML size details from the Shared Mailbox temp buffer
 
@@ -425,24 +425,24 @@ def readxmldetails(dram_shared_mailbox_buffer):
     :param dram_shared_mailbox_buffer: Shared Mailbox temporary buffer address
     :return:
     """
-    SharedMbSig1 = ReadBuffer(dram_shared_mailbox_buffer, SHAREDMB_SIG1_OFF, 4, HEX)
-    SharedMbSig2 = ReadBuffer(dram_shared_mailbox_buffer, SHAREDMB_SIG2_OFF, 4, HEX)
+    SharedMbSig1 = read_buffer(dram_shared_mailbox_buffer, SHAREDMB_SIG1_OFF, 4, HEX)
+    SharedMbSig2 = read_buffer(dram_shared_mailbox_buffer, SHAREDMB_SIG2_OFF, 4, HEX)
     GBT_XML_Addr = 0
     GBT_XML_Size = 0
     if (SharedMbSig1 == SHAREDMB_SIG1) and (SharedMbSig2 == SHAREDMB_SIG2):
-        ShareMbEntry1Sig = ReadBuffer(dram_shared_mailbox_buffer, LEGACYMB_SIG_OFF, 4, HEX)
+        ShareMbEntry1Sig = read_buffer(dram_shared_mailbox_buffer, LEGACYMB_SIG_OFF, 4, HEX)
         if ShareMbEntry1Sig == LEGACYMB_SIG:
             logger.debug(f"Legacy MB signature found: {ShareMbEntry1Sig}")
-            LegMbOffset = ReadBuffer(dram_shared_mailbox_buffer, LEGACYMB_OFF, 4, HEX)
+            LegMbOffset = read_buffer(dram_shared_mailbox_buffer, LEGACYMB_OFF, 4, HEX)
             if LegMbOffset > 0xFFFF:
-                GBT_XML_Addr = memread(LegMbOffset + LEGACYMB_XML_OFF, 4) + 4
+                GBT_XML_Addr = mem_read(LegMbOffset + LEGACYMB_XML_OFF, 4) + 4
             else:
-                GBT_XML_Addr = ReadBuffer(dram_shared_mailbox_buffer, LegMbOffset + LEGACYMB_XML_OFF, 4, HEX) + 4
-            GBT_XML_Size = memread(GBT_XML_Addr - 4, 4)
+                GBT_XML_Addr = read_buffer(dram_shared_mailbox_buffer, LegMbOffset + LEGACYMB_XML_OFF, 4, HEX) + 4
+            GBT_XML_Size = mem_read(GBT_XML_Addr - 4, 4)
     return GBT_XML_Addr, GBT_XML_Size
 
 
-def isxmlvalid(gbt_xml_address, gbt_xml_size):
+def is_xml_valid(gbt_xml_address, gbt_xml_size):
     """
     Check if Target XML is Valid or not
 
@@ -452,9 +452,9 @@ def isxmlvalid(gbt_xml_address, gbt_xml_size):
     """
     try:
         temp_buffer = read_mem_block(gbt_xml_address, 0x08)  # Read/save parameter buffer
-        SystemStart = ReadBuffer(temp_buffer, 0, 0x08, ASCII)
+        SystemStart = read_buffer(temp_buffer, 0, 0x08, ASCII)
         temp_buffer = read_mem_block(gbt_xml_address + gbt_xml_size - 0xB, 0x09)  # Read/save parameter buffer
-        SystemEnd = ReadBuffer(temp_buffer, 0, 0x09, ASCII)
+        SystemEnd = read_buffer(temp_buffer, 0, 0x09, ASCII)
         if (SystemStart == "<SYSTEM>") and (SystemEnd == "</SYSTEM>"):
             return True
         else:
@@ -466,46 +466,46 @@ def isxmlvalid(gbt_xml_address, gbt_xml_size):
 
 # TODO this seems helpful in some way, it can/should be used to determine if
 # everything is setup properly on the platform
-def IsXmlGenerated():
+def is_xml_generated():
     Status = 0
-    InitInterface()
-    DRAM_MbAddr = GetDramMbAddr()  # Get DRam Mailbox Address from Cmos.
-    logger.debug(f'CLI Spec Version = {GetCliSpecVersion(DRAM_MbAddr)}')
+    init_interface()
+    DRAM_MbAddr = get_dram_mb_addr()  # Get DRam Mailbox Address from Cmos.
+    logger.debug(f'CLI Spec Version = {get_cli_spec_version(DRAM_MbAddr)}')
     logger.debug(f'DRAM_MbAddr = 0x{DRAM_MbAddr:X}')
     if DRAM_MbAddr == 0x0:
         logger.error('Dram Shared Mailbox not Valid, hence exiting')
-        CloseInterface()
+        close_interface()
         return 1
     DramSharedMBbuf = read_mem_block(DRAM_MbAddr, 0x200)  # Read/save parameter buffer
-    XmlAddr, XmlSize = readxmldetails(DramSharedMBbuf)  # read GBTG XML address and Size
+    XmlAddr, XmlSize = read_xml_details(DramSharedMBbuf)  # read GBTG XML address and Size
     if XmlAddr == 0:
         logger.error('Platform Configuration XML not yet generated, hence exiting')
-        CloseInterface()
+        close_interface()
         return 1
-    if isxmlvalid(XmlAddr, XmlSize):
+    if is_xml_valid(XmlAddr, XmlSize):
         logger.debug('Xml Is Generated and it is Valid')
     else:
         logger.error(f'XML is not valid or not yet generated XmlAddr = 0x{XmlAddr:X}, XmlSize = 0x{XmlSize:X}')
         Status = 1
-    CloseInterface()
+    close_interface()
     return Status
 
 
 def get_xml():
-    InitInterface()
+    init_interface()
 
     # TODO add verification of DRAM address using verify_xmlcli_support
-    dram_mb_addr = GetDramMbAddr()  # Get DRam MAilbox Address from Cmos.
+    dram_mb_addr = get_dram_mb_addr()  # Get DRam MAilbox Address from Cmos.
 
     dram_shared_memory_buf = read_mem_block(dram_mb_addr, 0x200)  # Read/save parameter buffer
-    xml_addr, xml_size = readxmldetails(dram_shared_memory_buf)  # read GBTG XML address and Size
+    xml_addr, xml_size = read_xml_details(dram_shared_memory_buf)  # read GBTG XML address and Size
 
     logger.debug(f"XML Addr={xml_addr:#x}, XML Size={xml_size:#x}")
     if not xml_addr:
-        CloseInterface()
+        close_interface()
         raise BiosKnobsDataUnavailable()
 
-    if isxmlvalid(xml_addr, xml_size):
+    if is_xml_valid(xml_addr, xml_size):
         logger.debug("Valid XML data")
         xml_bytearray = read_mem_block(xml_addr, int(xml_size))
         defused_xml = ET.fromstring(xml_bytearray.decode())
@@ -514,16 +514,16 @@ def get_xml():
         # module because, at this point, it's already being parsed by defusedxml
         xml_data = ElementTree(defused_xml)
     else:
-        CloseInterface()
+        close_interface()
         raise InvalidXmlData(
             f'XML is not valid or not yet generated xml_addr = 0x{xml_addr:X}, xml_size = 0x{xml_size:X}')
 
-    CloseInterface()
+    close_interface()
     return xml_data
 
 
 # TODO I see potential on this, but the implementation was really bad
-def getBiosDetails():
+def get_bios_details():
     """
     Extract BIOS Version details from XML.
 
@@ -541,7 +541,7 @@ def getBiosDetails():
     """
 
 
-def getEfiCompatibleTableBase():
+def get_efi_compatible_table_base():
     """Search for the EFI Compatible tables in 0xE000/F000 segments
 
     Use-case would be to find DramMailbox in legacy way
@@ -549,8 +549,8 @@ def getEfiCompatibleTableBase():
     """
     EfiComTblSig = 0x24454649
     for Index in range(0, 0x1000, 0x10):
-        Sig1 = memread(0xE0000 + Index, 4)
-        Sig2 = memread(0xF0000 + Index, 4)
+        Sig1 = mem_read(0xE0000 + Index, 4)
+        Sig2 = mem_read(0xF0000 + Index, 4)
         if Sig1 == EfiComTblSig:
             BaseAddress = 0xE0000 + Index
             logger.debug(f'Found EfiCompatibleTable Signature at 0x{BaseAddress:X}')
@@ -563,53 +563,53 @@ def getEfiCompatibleTableBase():
     return 0
 
 
-def SearchForSystemTableAddress():
+def search_for_system_table_address():
     for Address in range(0x20000000, 0xE0000000, 0x400000):  # EFI_SYSTEM_TABLE_POINTER address is 4MB aligned
-        Signature = memread(Address, 8)
+        Signature = mem_read(Address, 8)
         if Signature == 0x5453595320494249:  # EFI System Table Signature = 'IBI SYST'
-            Address = memread((Address + 8), 8)
+            Address = mem_read((Address + 8), 8)
             return Address
     return 0
 
 
 # TODO this also seems kind of helpful
-def readDramMbAddrFromEFI():
+def read_dram_mb_addr_from_efi():
     DramSharedMailBoxGuidLow = 0x4D2C18789D99A394
     DramSharedMailBoxGuidHigh = 0x3379C48E6BC1E998
     logger.debug('Searching for Dram Shared Mailbox address from gST EfiConfigTable..')
-    gST = SearchForSystemTableAddress()
+    gST = search_for_system_table_address()
     if gST == 0:
-        EfiCompatibleTableBase = getEfiCompatibleTableBase()
+        EfiCompatibleTableBase = get_efi_compatible_table_base()
         if EfiCompatibleTableBase == 0:
             return 0
-        gST = memread(EfiCompatibleTableBase + 0x14, 4)
-    Signature = memread(gST, 8)
+        gST = mem_read(EfiCompatibleTableBase + 0x14, 4)
+    Signature = mem_read(gST, 8)
     if Signature != 0x5453595320494249:  # EFI System Table Signature = 'IBI SYST'
         return 0
     logger.debug(
-        f'EFI SYSTEM TABLE Address = 0x{gST:X}  Signature = \"{UnHexLiFy(Signature)[::-1]}\"    Revision = {memread(gST + 8, 2):d}.{memread(gST + 0xA, 2):d}')
+        f'EFI SYSTEM TABLE Address = 0x{gST:X}  Signature = \"{un_hex_li_fy(Signature)[::-1]}\"    Revision = {mem_read(gST + 8, 2):d}.{mem_read(gST + 0xA, 2):d}')
     count = 0
-    FirmwarePtr = memread(gST + 0x18, 8)
-    FirmwareRevision = memread(gST + 0x20, 4)
+    FirmwarePtr = mem_read(gST + 0x18, 8)
+    FirmwareRevision = mem_read(gST + 0x20, 4)
     BiosStr = ''
     while 1:
-        Value = int(memread(FirmwarePtr + count, 2))
+        Value = int(mem_read(FirmwarePtr + count, 2))
         if Value == 0:
             break
         BiosStr = BiosStr + chr((Value & 0xFF))
         count = count + 2
     logger.debug(f'Firmware : {BiosStr}')
     logger.debug(f'Firmware Revision: 0x{FirmwareRevision:X}')
-    EfiConfigTblEntries = memread(gST + 0x68, 8)
-    EfiConfigTbl = memread(gST + 0x70, 8)
+    EfiConfigTblEntries = mem_read(gST + 0x68, 8)
+    EfiConfigTbl = mem_read(gST + 0x70, 8)
     logger.debug(f'EfiConfigTblEntries = {EfiConfigTblEntries:d}  EfiConfigTbl Addr = 0x{EfiConfigTbl:X}')
     Offset = 0
     DramMailboxAddr = 0
     for Index in range(0, EfiConfigTblEntries):
-        GuidLow = memread(EfiConfigTbl + Offset, 8)
-        GuidHigh = memread(EfiConfigTbl + 8 + Offset, 8)
+        GuidLow = mem_read(EfiConfigTbl + Offset, 8)
+        GuidHigh = mem_read(EfiConfigTbl + 8 + Offset, 8)
         if (GuidLow == DramSharedMailBoxGuidLow) and (GuidHigh == DramSharedMailBoxGuidHigh):
-            DramMailboxAddr = int(memread(EfiConfigTbl + 16 + Offset, 8))
+            DramMailboxAddr = int(mem_read(EfiConfigTbl + 16 + Offset, 8))
             logger.info(f'Found Dram Shared MailBox Address = 0x{DramMailboxAddr:X} from EfiConfigTable')
             break
         Offset = Offset + 0x18
@@ -617,7 +617,7 @@ def readDramMbAddrFromEFI():
 
 
 # TODO I want to revisit this method to learn about this legacy memory map
-def PrintE820Table():
+def print_e820_table():
     """Legacy function for printing E820 table for memory type identification using
     legacy efi compatible table
 
@@ -631,16 +631,16 @@ def PrintE820Table():
     Offset = 0
     Index = 0
     E820TableList = {}
-    EfiCompatibleTableBase = getEfiCompatibleTableBase()
-    E820Ptr = memread(EfiCompatibleTableBase + 0x22, 4)
-    Size = memread(EfiCompatibleTableBase + 0x26, 4)
+    EfiCompatibleTableBase = get_efi_compatible_table_base()
+    E820Ptr = mem_read(EfiCompatibleTableBase + 0x22, 4)
+    Size = mem_read(EfiCompatibleTableBase + 0x26, 4)
     logger.debug(',,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,')
     logger.debug('E820[no]: Start Block Address ---- End Block Address , Type = Mem Type')
     logger.debug('``````````````````````````````````````````````````````````````````````')
     while 1:
-        BaseAddr = memread(E820Ptr + Offset, 8)
-        Length = memread(E820Ptr + Offset + 8, 8)
-        Type = memread(E820Ptr + Offset + 16, 4)
+        BaseAddr = mem_read(E820Ptr + Offset, 8)
+        Length = mem_read(E820Ptr + Offset + 8, 8)
+        Type = mem_read(E820Ptr + Offset + 16, 4)
         logger.debug(f'E820[{Index:2d}]:  0x{BaseAddr:16X} ---- 0x{(BaseAddr + Length):<16X}, Type = 0X{Type:x} ')
         E820TableList[Index] = [BaseAddr, Length, Type]
         Index = Index + 1
