@@ -59,15 +59,6 @@ LEGACYMB_XML_CLI_TEMP_ADDR_OFF = 0x60
 ASCII = 0xA5
 HEX = 0x16
 
-CLI_REQ_READY_SIG = 0xC001C001
-CLI_RES_READY_SIG = 0xCAFECAFE
-CLI_REQ_RES_READY_SIG_OFF = 0x00
-CLI_REQ_RES_READY_CMD_OFF = 0x04
-CLI_REQ_RES_READY_FLAGS_OFF = 0x06
-CLI_REQ_RES_READY_STATUS_OFF = 0x08
-CLI_REQ_RES_READY_PARAMSZ_OFF = 0x0C
-CLI_REQ_RES_BUFF_HEADER_SIZE = 0x10
-
 CliSpecRelVersion = 0x00
 CliSpecMajorVersion = 0x00
 CliSpecMinorVersion = 0x00
@@ -333,19 +324,10 @@ def UnHexLiFy(Integer):
 
 
 def GetCliSpecVersion(DramMbAddr):
-    global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion, CLI_REQ_READY_SIG, CLI_RES_READY_SIG
+    global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion
     CliSpecRelVersion = memread((DramMbAddr + CLI_SPEC_VERSION_RELEASE_OFF), 1) & 0xF
     CliSpecMajorVersion = memread((DramMbAddr + CLI_SPEC_VERSION_MAJOR_OFF), 2)
     CliSpecMinorVersion = memread((DramMbAddr + CLI_SPEC_VERSION_MINOR_OFF), 1)
-    CLI_REQ_READY_SIG = 0xC001C001
-    CLI_RES_READY_SIG = 0xCAFECAFE
-    if CliSpecRelVersion == 0:
-        if CliSpecMajorVersion >= 7:
-            CLI_REQ_READY_SIG = 0xD055C001
-            CLI_RES_READY_SIG = 0xD055CAFE
-    else:
-        CLI_REQ_READY_SIG = 0xD055C001
-        CLI_RES_READY_SIG = 0xD055CAFE
     return f'{CliSpecRelVersion:d}.{CliSpecMajorVersion:d}.{CliSpecMinorVersion:d}'
 
 
