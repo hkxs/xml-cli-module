@@ -6,16 +6,6 @@ SMI_TRIGGER_PORT = 0xB2
 DEPRECATION_WARNINGS = False
 
 
-class CliAccessException(Exception):
-    def __init__(self, message="CliAccess is a virtual class!", error_code=None, *args, **kwargs):
-        hints = "\n".join(kwargs.get("hints", []))
-        self.message = "[CliAccessExceptionError: {}] {}".format(error_code, message) if error_code else "[CliAccessException] {}".format(message)
-        if hints:
-            self.message += "\nHint: " + hints
-        super(CliAccessException, self).__init__(self.message)
-
-
-
 class BaseAccess(object):
     def __init__(self, access_name, child_class_directory):
         self.InterfaceType = access_name
@@ -37,57 +27,57 @@ class BaseAccess(object):
         self.config.read(self.config_file)
 
     def halt_cpu(self, delay):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def run_cpu(self):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def initialize_interface(self):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def close_interface(self):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def warm_reset(self):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def cold_reset(self):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def mem_block(self, address, size):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def mem_save(self, filename, address, size):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def mem_read(self, address, size):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def mem_write(self, address, size, value):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def load_data(self, filename, address):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def read_io(self, address, size):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def write_io(self, address, size, value):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def trigger_smi(self, smi_value):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def read_msr(self, ap, address):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     def write_msr(self, ap, address, value):
-        raise CliAccessException()
+        raise NotImplementedError()
 
 
     def read_sm_base(self):
-        raise CliAccessException()
+        raise NotImplementedError()
 
     @staticmethod
     def is_thread_alive(thread):
-        raise CliAccessException()
+        raise NotImplementedError()
