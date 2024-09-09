@@ -113,19 +113,6 @@ def _check_cli_access():
         # refactored
         raise SystemError("Uninitialized Access")
 
-
-def init_interface():
-    global cli_access
-    _check_cli_access()
-    return cli_access.initialize_interface()
-
-
-def close_interface():
-    global cli_access
-    _check_cli_access()
-    return cli_access.close_interface()
-
-
 def read_mem_block(address, size):
     """
     Reads the data block of given size from target memory
@@ -372,14 +359,12 @@ def get_dram_mb_addr():
     :return:
     """
     global gDramSharedMbAddr
-    init_interface()
     write_io(0x72, 1, 0xF0)  # Write a byte to cmos offset 0xF0
     result0 = int(read_io(0x73, 1) & 0xFF)  # Read a byte from cmos offset 0xBB [23:16]
     write_io(0x72, 1, 0xF1)  # Write a byte to cmos offset 0xF1
     result1 = int(read_io(0x73, 1) & 0xFF)  # Read a byte from cmos offset 0xBC [31:24]
     dram_shared_mb_address = int((result1 << 24) | (result0 << 16))  # Get bits [31:24] of the Dram MB address
     if is_leg_mb_sig_valid(dram_shared_mb_address):
-        close_interface()
         return dram_shared_mb_address
 
     write_io(0x70, 1, 0x78)  # Write a byte to cmos offset 0x78
@@ -388,7 +373,6 @@ def get_dram_mb_addr():
     result1 = int(read_io(0x71, 1) & 0xFF)  # Read a byte from cmos offset 0xBC [31:24]
     dram_shared_mb_address = int((result1 << 24) | (result0 << 16))  # Get bits [31:24] of the Dram MB address
     if is_leg_mb_sig_valid(dram_shared_mb_address):
-        close_interface()
         logger.debug(f'CLI Spec Version = {get_cli_spec_version(dram_shared_mb_address)}')
         logger.debug(f'DRAM_MbAddr = 0x{dram_shared_mb_address:X}')
         return dram_shared_mb_address
@@ -396,21 +380,17 @@ def get_dram_mb_addr():
     if gDramSharedMbAddr != 0:
         dram_shared_mb_address = int(gDramSharedMbAddr)
         if is_leg_mb_sig_valid(dram_shared_mb_address):
-            close_interface()
             logger.debug(f'CLI Spec Version = {get_cli_spec_version(dram_shared_mb_address)}')
             logger.debug(f'DRAM_MbAddr = 0x{dram_shared_mb_address:X}')
             return dram_shared_mb_address
-    close_interface()
 
     return 0
 
 
 def verify_xmlcli_support():
-    init_interface()
     if not get_dram_mb_addr():
         raise XmlCliNotSupported()
     logger.debug('XmlCli is Enabled')
-    close_interface()
 
 
 def read_xml_details(dram_shared_mailbox_buffer):
@@ -469,31 +449,26 @@ def is_xml_valid(gbt_xml_address, gbt_xml_size):
 # everything is setup properly on the platform
 def is_xml_generated():
     status = 0
-    init_interface()
     dram_mb_addr = get_dram_mb_addr()  # Get DRam Mailbox Address from Cmos.
     logger.debug(f'CLI Spec Version = {get_cli_spec_version(dram_mb_addr)}')
     logger.debug(f'dram_mb_addr = 0x{dram_mb_addr:X}')
     if dram_mb_addr == 0x0:
         logger.error('Dram Shared Mailbox not Valid, hence exiting')
-        close_interface()
         return 1
     dram_shared_m_bbuf = read_mem_block(dram_mb_addr, 0x200)  # Read/save parameter buffer
     xml_addr, xml_size = read_xml_details(dram_shared_m_bbuf)  # read GBTG XML address and Size
     if xml_addr == 0:
         logger.error('Platform Configuration XML not yet generated, hence exiting')
-        close_interface()
         return 1
     if is_xml_valid(xml_addr, xml_size):
         logger.debug('Xml Is Generated and it is Valid')
     else:
         logger.error(f'XML is not valid or not yet generated ADDR = 0x{xml_addr:X}, SIZE = 0x{xml_size:X}')
         status = 1
-    close_interface()
     return status
 
 
 def get_xml():
-    init_interface()
 
     # TODO add verification of DRAM address using verify_xmlcli_support
     dram_mb_addr = get_dram_mb_addr()  # Get DRam Mailbox Address from Cmos.
@@ -503,7 +478,6 @@ def get_xml():
 
     logger.debug(f"XML Addr={xml_addr:#x}, XML Size={xml_size:#x}")
     if not xml_addr:
-        close_interface()
         raise BiosKnobsDataUnavailable()
 
     if is_xml_valid(xml_addr, xml_size):
@@ -515,11 +489,9 @@ def get_xml():
         # module because, at this point, it's already being parsed by defusedxml
         xml_data = ElementTree(defused_xml)
     else:
-        close_interface()
         raise InvalidXmlData(
             f'XML is not valid or not yet generated xml_addr = 0x{xml_addr:X}, xml_size = 0x{xml_size:X}')
 
-    close_interface()
     return xml_data
 
 
