@@ -24,20 +24,20 @@ import os
 
 
 def config_read(config_file):
-  """As the UEFI Python has limitation,
-  this method is to handle exception for the same in order to read configuration
+    """As the UEFI Python has limitation,
+    this method is to handle exception for the same in order to read configuration
 
-  :param config_file: file to read in to config parser object
-  :return: config parser object with config read from file
-  """
-  configparser_object = configparser.RawConfigParser(allow_no_value=True)
-  try:
-    configparser_object.read(config_file)
-  except AttributeError:
-    # EFI Shell may encounter at this flow while reading config file as .read method uses os.popen which is not available at EFI Python
-    with open(config_file, "r") as f:
-      configparser_object._read(f, config_file)
-  return configparser_object
+    :param config_file: file to read in to config parser object
+    :return: config parser object with config read from file
+    """
+    configparser_object = configparser.RawConfigParser(allow_no_value=True)
+    try:
+        configparser_object.read(config_file)
+    except AttributeError:
+        # EFI Shell may encounter at this flow while reading config file as .read method uses os.popen which is not available at EFI Python
+        with open(config_file, "r") as f:
+            configparser_object._read(f, config_file)
+    return configparser_object
 
 
 # Current directory src/common

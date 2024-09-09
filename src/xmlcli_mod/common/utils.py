@@ -23,4 +23,4 @@ import os
 
 
 def is_root():
-  return os.geteuid() == 0
+    return os.geteuid() == 0
