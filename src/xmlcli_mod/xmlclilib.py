@@ -24,8 +24,8 @@ import importlib
 import logging
 import platform
 
-import xmlcli_mod.common.configurations
-from xmlcli_mod.common.configurations import SHAREDMB_SIG1, SHAREDMB_SIG2, LEGACYMB_SIG, SHAREDMB_SIG1_OFF, \
+import xmlcli_mod.common.constants
+from xmlcli_mod.common.constants import SHAREDMB_SIG1, SHAREDMB_SIG2, LEGACYMB_SIG, SHAREDMB_SIG1_OFF, \
     SHAREDMB_SIG2_OFF, CLI_SPEC_VERSION_MINOR_OFF, CLI_SPEC_VERSION_MAJOR_OFF, CLI_SPEC_VERSION_RELEASE_OFF, \
     LEGACYMB_SIG_OFF, LEGACYMB_OFF, LEGACYMB_XML_OFF, ASCII, HEX
 
