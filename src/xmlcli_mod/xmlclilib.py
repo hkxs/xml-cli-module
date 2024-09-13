@@ -24,13 +24,11 @@ import os
 import binascii
 import importlib
 import logging
+import platform
 import defusedxml.ElementTree as ET
-from pathlib import Path
 from xml.etree.ElementTree import ElementTree
 
-from xmlcli_mod.common import configurations
 from xmlcli_mod.common.errors import BiosKnobsDataUnavailable
-from xmlcli_mod.common.errors import InvalidAccessMethod
 from xmlcli_mod.common.errors import InvalidXmlData
 from xmlcli_mod.common.errors import XmlCliNotSupported
 
