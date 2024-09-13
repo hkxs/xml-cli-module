@@ -19,8 +19,6 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import os
-
 import binascii
 import importlib
 import logging
@@ -67,7 +65,7 @@ PAGE_SIZE = 0x1000
 def load_os_specific_access():
     os_name = platform.system()  # Get the name of the OS
     try:
-        module_name = f"xmlcli_mod.access.{os_name.lower()}"
+        module_name = f"xmlcli_mod.access.{os_name.lower()}.{os_name.lower()}"
         module = importlib.import_module(module_name)
     except ImportError:
         raise RuntimeError(f"Unsupported OS: {os_name}")
