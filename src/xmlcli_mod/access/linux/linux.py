@@ -23,6 +23,7 @@ import os
 import mmap
 import ctypes
 import binascii
+from pathlib import Path
 
 from xmlcli_mod.access.base import base
 
@@ -33,10 +34,10 @@ class LinuxAccess(base.BaseAccess):
     def __init__(self, access_name="linux"):
         self.current_directory = os.path.dirname(os.path.abspath(__file__))
         super(LinuxAccess, self).__init__(access_name=access_name, child_class_directory=self.current_directory)
-        self.memory_file = self.config.get(access_name.upper(), "memory_file")
+        self.memory_file = "/dev/mem"
         self.map_mask = mmap.PAGESIZE - 1
         # Read Port library
-        self.port_lib_location = os.path.join(self.current_directory, self.config.get(access_name.upper(), "lib_port"))
+        self.port_lib_location = Path(__file__).resolve().with_name("libport.lso")
         self.port_library = ctypes.CDLL(self.port_lib_location)
         # Read Port configuration
         self._read_port = self.port_library.read_port
@@ -45,18 +46,18 @@ class LinuxAccess(base.BaseAccess):
         # Write port configuration
         self._write_port = self.port_library.write_port
         self._write_port.argtypes = (ctypes.c_uint16, ctypes.c_uint8, ctypes.c_uint32)
-        self.external_mem = self.config.getboolean(access_name.upper(), "external_mem")
-        if self.external_mem:
-            self.lib_mem = os.path.join(self.current_directory, self.config.get(access_name.upper(), "lib_mem"))
-            self.mem_library = ctypes.CDLL(self.lib_mem)
-            # Read Memory configuration
-            self._read_mem = self.mem_library.mem_read
-            self._read_mem.argtypes = (ctypes.c_ulong, ctypes.c_void_p, ctypes.c_size_t)
-            self._read_mem.restype = ctypes.c_int
-            # Write Memory configuration
-            self._write_mem = self.mem_library.mem_write
-            self._write_mem.argtypes = (ctypes.c_ulong, ctypes.c_void_p, ctypes.c_size_t)
-            self._write_mem.restype = ctypes.c_int
+
+        # external memory
+        self.lib_mem = Path(__file__).resolve().with_name("libmem.lso")
+        self.mem_library = ctypes.CDLL(self.lib_mem)
+        # Read Memory configuration
+        self._read_mem = self.mem_library.mem_read
+        self._read_mem.argtypes = (ctypes.c_ulong, ctypes.c_void_p, ctypes.c_size_t)
+        self._read_mem.restype = ctypes.c_int
+        # Write Memory configuration
+        self._write_mem = self.mem_library.mem_write
+        self._write_mem.argtypes = (ctypes.c_ulong, ctypes.c_void_p, ctypes.c_size_t)
+        self._write_mem.restype = ctypes.c_int
 
     def read_port(self, port, size):
         read_val = 0
@@ -93,16 +94,12 @@ class LinuxAccess(base.BaseAccess):
         return data
 
     def read_memory(self, address, size):
-        if self.external_mem:
-            dest = (ctypes.c_ubyte * size)()
-            self._read_mem(address, ctypes.cast(dest, ctypes.c_void_p), size)
-            result = 0
-            ctypes.cast(dest, ctypes.c_char_p)
-            for i in range(0, size):
-                result += dest[i] << 8 * i
-        else:
-            result = self.read_memory_bytes(address, size)
-            result = int.from_bytes(result, byteorder="little", signed=False)
+        dest = (ctypes.c_ubyte * size)()
+        self._read_mem(address, ctypes.cast(dest, ctypes.c_void_p), size)
+        result = 0
+        ctypes.cast(dest, ctypes.c_char_p)
+        for i in range(0, size):
+            result += dest[i] << 8 * i
         return result
 
     def write_memory_bytes(self, address, data, size):
@@ -125,15 +122,12 @@ class LinuxAccess(base.BaseAccess):
         return bytes_written
 
     def write_memory(self, address, data, size):
-        if self.external_mem:
-            if isinstance(data, int):
-                data = ctypes.c_ulonglong(data)
-                _data = ctypes.byref(data)
-            else:
-                _data = data
-            bytes_written = self._write_mem(address, _data, size)
+        if isinstance(data, int):
+            data = ctypes.c_ulonglong(data)
+            _data = ctypes.byref(data)
         else:
-            bytes_written = self.write_memory_bytes(address, data, size)
+            _data = data
+        bytes_written = self._write_mem(address, _data, size)
         return bytes_written
 
     def mem(self, address, size, val=None):
