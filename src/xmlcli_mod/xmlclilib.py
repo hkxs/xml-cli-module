@@ -24,8 +24,9 @@ import os
 import binascii
 import importlib
 import logging
-
+import defusedxml.ElementTree as ET
 from pathlib import Path
+from xml.etree.ElementTree import ElementTree
 
 from xmlcli_mod.common import configurations
 from xmlcli_mod.common.errors import BiosKnobsDataUnavailable
@@ -65,44 +66,21 @@ CliSpecMinorVersion = 0x00
 PAGE_SIZE = 0x1000
 
 
+def load_os_specific_access():
+    os_name = platform.system()  # Get the name of the OS
+    try:
+        module_name = f"xmlcli_mod.access.{os_name.lower()}"
+        module = importlib.import_module(module_name)
+    except ImportError:
+        raise RuntimeError(f"Unsupported OS: {os_name}")
 
-class CliLib:
-    def __init__(self, access_request):
-        access_methods = self.get_available_access_methods()
-        if access_request in access_methods:
-            config_file_path = Path(configurations.XMLCLI_DIR, access_methods[access_request])
+    access_class = getattr(module, f"{os_name}Access")
+    return access_class()
 
-            self.access_config = configurations.config_read(config_file_path)
-            access_file = self.access_config.get(access_request.upper(), "file")  # Source file of access method
-            access_module_path = f"xmlcli_mod.access.{access_request}.{os.path.splitext(access_file)[0]}"
-            access_file = importlib.import_module(access_module_path)  # Import access method
-            method_class = self.access_config.get(access_request.upper(), "method_class")
-            self.access_instance = getattr(access_file, method_class)(access_request)  # create instance of Access method class
-        else:
-            raise InvalidAccessMethod(access_request)
-
-    @staticmethod
-    def get_available_access_methods():
-        """Gather all the available access method name and it's configuration file from defined in tool configuration file
-
-        :return: dictionary structure {access_method_name: config_file}
-        """
-        return {"linux": "access/linux/linux.ini"}
-
-    def set_cli_access(self, access_request=None):
-        access_methods = self.get_available_access_methods()
-        if access_request in access_methods:
-            access_config = os.path.join(configurations.XMLCLI_DIR, access_methods[access_request])
-            if os.path.exists(access_config):
-                self.access_config = configurations.config_read(access_config)
-
-
-def set_cli_access(req_access):
+def set_cli_access():
     global cli_access
     if not cli_access:
-        logger.debug(f"Using '{req_access.lower()}' access")
-        cli_instance = CliLib(req_access.lower())
-        cli_access = cli_instance.access_instance
+        cli_access = load_os_specific_access()
 
 
 def _check_cli_access():
@@ -482,7 +460,11 @@ def get_xml():
     if is_xml_valid(xml_addr, xml_size):
         logger.debug("Valid XML data")
         xml_bytearray = read_mem_block(xml_addr, int(xml_size))
-        xml_data = xml_bytearray.decode()
+        defused_xml = ET.fromstring(xml_bytearray.decode())
+
+        # we're converting an element to a tree, we can safely use built-in xml
+        # module because, at this point, it's already being parsed by defusedxml
+        xml_data = ElementTree(defused_xml)
     else:
         raise InvalidXmlData(
             f'XML is not valid or not yet generated xml_addr = 0x{xml_addr:X}, xml_size = 0x{xml_size:X}')

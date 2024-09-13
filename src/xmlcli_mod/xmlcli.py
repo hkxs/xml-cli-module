@@ -72,7 +72,7 @@ class XmlCli:
         self._xml_string = ""
         self.xml_data = None
         self._knobs = None
-        xmlclilib.set_cli_access("Linux")
+        xmlclilib.set_cli_access()
         xmlclilib.verify_xmlcli_support()
         self._get_xml_knobs()
 
