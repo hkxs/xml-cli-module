@@ -19,28 +19,20 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import configparser
-import os
-
-
-def config_read(config_file):
-    """As the UEFI Python has limitation,
-    this method is to handle exception for the same in order to read configuration
-
-    :param config_file: file to read in to config parser object
-    :return: config parser object with config read from file
-    """
-    configparser_object = configparser.RawConfigParser(allow_no_value=True)
-    configparser_object.read(config_file)
-
-    return configparser_object
-
-
-# Current directory src/common
-CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
-
-# XmlCli source directory
-XMLCLI_DIR = os.path.dirname(CURRENT_DIRECTORY)
-
-# Configuration parser object
-ENCODING = "utf-8"
+SHAREDMB_SIG1 = 0xBA5EBA11
+SHAREDMB_SIG2 = 0xBA5EBA11
+SHARED_MB_LEGMB_SIG_OFF = 0x20
+SHARED_MB_LEGMB_ADDR_OFF = 0x24
+LEGACYMB_SIG = 0x5A7ECAFE
+SHAREDMB_SIG1_OFF = 0x00
+SHAREDMB_SIG2_OFF = 0x08
+CLI_SPEC_VERSION_MINOR_OFF = 0x14
+CLI_SPEC_VERSION_MAJOR_OFF = 0x15
+CLI_SPEC_VERSION_RELEASE_OFF = 0x17
+LEGACYMB_SIG_OFF = 0x20
+LEGACYMB_OFF = 0x24
+LEGACYMB_XML_OFF = 0x0C
+MERLINX_XML_CLI_ENABLED_OFF = 0x28
+LEGACYMB_XML_CLI_TEMP_ADDR_OFF = 0x60
+ASCII = 0xA5
+HEX = 0x16

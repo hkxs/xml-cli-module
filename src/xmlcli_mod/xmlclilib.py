@@ -23,8 +23,11 @@ import binascii
 import importlib
 import logging
 import platform
-import defusedxml.ElementTree as ET
-from xml.etree.ElementTree import ElementTree
+
+import xmlcli_mod.common.configurations
+from xmlcli_mod.common.configurations import SHAREDMB_SIG1, SHAREDMB_SIG2, LEGACYMB_SIG, SHAREDMB_SIG1_OFF, \
+    SHAREDMB_SIG2_OFF, CLI_SPEC_VERSION_MINOR_OFF, CLI_SPEC_VERSION_MAJOR_OFF, CLI_SPEC_VERSION_RELEASE_OFF, \
+    LEGACYMB_SIG_OFF, LEGACYMB_OFF, LEGACYMB_XML_OFF, ASCII, HEX
 
 from xmlcli_mod.common.errors import BiosKnobsDataUnavailable
 from xmlcli_mod.common.errors import InvalidXmlData
@@ -35,25 +38,6 @@ logger = logging.getLogger(__name__)
 cli_access = None
 
 gDramSharedMbAddr = 0
-
-SHAREDMB_SIG1 = 0xBA5EBA11
-SHAREDMB_SIG2 = 0xBA5EBA11
-SHARED_MB_LEGMB_SIG_OFF = 0x20
-SHARED_MB_LEGMB_ADDR_OFF = 0x24
-LEGACYMB_SIG = 0x5A7ECAFE
-
-SHAREDMB_SIG1_OFF = 0x00
-SHAREDMB_SIG2_OFF = 0x08
-CLI_SPEC_VERSION_MINOR_OFF = 0x14
-CLI_SPEC_VERSION_MAJOR_OFF = 0x15
-CLI_SPEC_VERSION_RELEASE_OFF = 0x17
-LEGACYMB_SIG_OFF = 0x20
-LEGACYMB_OFF = 0x24
-LEGACYMB_XML_OFF = 0x0C
-MERLINX_XML_CLI_ENABLED_OFF = 0x28
-LEGACYMB_XML_CLI_TEMP_ADDR_OFF = 0x60
-ASCII = 0xA5
-HEX = 0x16
 
 CliSpecRelVersion = 0x00
 CliSpecMajorVersion = 0x00
@@ -295,21 +279,21 @@ def get_cli_spec_version(dram_mb_addr):
 
 
 def fix_leg_xml_offset(dram_mb_addr):
-    global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion, LEGACYMB_XML_OFF
-    LEGACYMB_XML_OFF = 0x0C
+    global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion
+    xmlcli_mod.common.configurations.LEGACYMB_XML_OFF = 0x0C
     if CliSpecRelVersion == 0:
         if CliSpecMajorVersion >= 7:
-            LEGACYMB_XML_OFF = 0x50
+            xmlcli_mod.common.configurations.LEGACYMB_XML_OFF = 0x50
             if (CliSpecMajorVersion == 7) and (CliSpecMinorVersion == 0):
                 leg_mb_offset = mem_read((dram_mb_addr + LEGACYMB_OFF), 4)
                 if leg_mb_offset < 0xFFFF:
                     leg_mb_offset = dram_mb_addr + leg_mb_offset
                 if mem_read((leg_mb_offset + 0x4C), 4) == 0:
-                    LEGACYMB_XML_OFF = 0x50
+                    xmlcli_mod.common.configurations.LEGACYMB_XML_OFF = 0x50
                 else:
-                    LEGACYMB_XML_OFF = 0x4C
+                    xmlcli_mod.common.configurations.LEGACYMB_XML_OFF = 0x4C
     else:
-        LEGACYMB_XML_OFF = 0x50
+        xmlcli_mod.common.configurations.LEGACYMB_XML_OFF = 0x50
 
 
 def is_leg_mb_sig_valid(dram_mb_addr):
