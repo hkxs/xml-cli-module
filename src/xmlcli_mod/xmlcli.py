@@ -83,7 +83,8 @@ class XmlCli:
         This method fetches the XML configuration and assigns it to the
         `xml_data` attribute.
         """
-        defused_xml = ET.fromstring()
+        self._xml_string = xmlclilib.get_xml()
+        defused_xml = ET.fromstring(self._xml_string)
 
         # we're converting an element to a tree, we can safely use built-in xml
         # module because, at this point, it's already being parsed by defusedxml
