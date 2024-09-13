@@ -456,11 +456,7 @@ def get_xml():
     if is_xml_valid(xml_addr, xml_size):
         logger.debug("Valid XML data")
         xml_bytearray = read_mem_block(xml_addr, int(xml_size))
-        defused_xml = ET.fromstring(xml_bytearray.decode())
-
-        # we're converting an element to a tree, we can safely use built-in xml
-        # module because, at this point, it's already being parsed by defusedxml
-        xml_data = ElementTree(defused_xml)
+        xml_data = xml_bytearray.decode()
     else:
         raise InvalidXmlData(
             f'XML is not valid or not yet generated xml_addr = 0x{xml_addr:X}, xml_size = 0x{xml_size:X}')
