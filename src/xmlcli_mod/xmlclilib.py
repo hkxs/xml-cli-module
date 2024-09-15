@@ -24,10 +24,8 @@ import importlib
 import logging
 import platform
 
-import xmlcli_mod.common.constants
-from xmlcli_mod.common.constants import SHAREDMB_SIG1, SHAREDMB_SIG2, LEGACYMB_SIG, SHAREDMB_SIG1_OFF, \
-    SHAREDMB_SIG2_OFF, CLI_SPEC_VERSION_MINOR_OFF, CLI_SPEC_VERSION_MAJOR_OFF, CLI_SPEC_VERSION_RELEASE_OFF, \
-    LEGACYMB_SIG_OFF, LEGACYMB_OFF, LEGACYMB_XML_OFF, ASCII, HEX
+import xmlcli_mod.common.constants as const
+
 
 from xmlcli_mod.common.errors import BiosKnobsDataUnavailable
 from xmlcli_mod.common.errors import InvalidXmlData
@@ -256,10 +254,10 @@ def read_buffer(input_buffer, offset, size, input_type):
     value_string = ''
     if len(value_buffer) == 0:
         return 0
-    if input_type == ASCII:
+    if input_type == const.ASCII:
         value_string = "".join(chr(value_buffer[i]) for i in range(len(value_buffer)))
         return value_string
-    if input_type == HEX:
+    if input_type == const.HEX:
         for count in range(len(value_buffer)):
             value_string = f"{value_buffer[count]:02x}" + value_string
         return int(value_string, 16)
@@ -272,38 +270,38 @@ def un_hex_li_fy(value):
 
 def get_cli_spec_version(dram_mb_addr):
     global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion
-    CliSpecRelVersion = mem_read((dram_mb_addr + CLI_SPEC_VERSION_RELEASE_OFF), 1) & 0xF
-    CliSpecMajorVersion = mem_read((dram_mb_addr + CLI_SPEC_VERSION_MAJOR_OFF), 2)
-    CliSpecMinorVersion = mem_read((dram_mb_addr + CLI_SPEC_VERSION_MINOR_OFF), 1)
+    CliSpecRelVersion = mem_read((dram_mb_addr + const.CLI_SPEC_VERSION_RELEASE_OFF), 1) & 0xF
+    CliSpecMajorVersion = mem_read((dram_mb_addr + const.CLI_SPEC_VERSION_MAJOR_OFF), 2)
+    CliSpecMinorVersion = mem_read((dram_mb_addr + const.CLI_SPEC_VERSION_MINOR_OFF), 1)
     return f'{CliSpecRelVersion:d}.{CliSpecMajorVersion:d}.{CliSpecMinorVersion:d}'
 
 
 def fix_leg_xml_offset(dram_mb_addr):
     global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion
-    xmlcli_mod.common.configurations.LEGACYMB_XML_OFF = 0x0C
+    const.LEGACYMB_XML_OFF = 0x0C
     if CliSpecRelVersion == 0:
         if CliSpecMajorVersion >= 7:
-            xmlcli_mod.common.configurations.LEGACYMB_XML_OFF = 0x50
+            const.LEGACYMB_XML_OFF = 0x50
             if (CliSpecMajorVersion == 7) and (CliSpecMinorVersion == 0):
-                leg_mb_offset = mem_read((dram_mb_addr + LEGACYMB_OFF), 4)
+                leg_mb_offset = mem_read((dram_mb_addr + const.LEGACYMB_OFF), 4)
                 if leg_mb_offset < 0xFFFF:
                     leg_mb_offset = dram_mb_addr + leg_mb_offset
                 if mem_read((leg_mb_offset + 0x4C), 4) == 0:
-                    xmlcli_mod.common.configurations.LEGACYMB_XML_OFF = 0x50
+                    const.LEGACYMB_XML_OFF = 0x50
                 else:
-                    xmlcli_mod.common.configurations.LEGACYMB_XML_OFF = 0x4C
+                    const.LEGACYMB_XML_OFF = 0x4C
     else:
-        xmlcli_mod.common.configurations.LEGACYMB_XML_OFF = 0x50
+        const.LEGACYMB_XML_OFF = 0x50
 
 
 def is_leg_mb_sig_valid(dram_mb_addr):
     global CliSpecRelVersion, CliSpecMajorVersion
-    shared_mb_sig1 = mem_read((dram_mb_addr + SHAREDMB_SIG1_OFF), 4)
-    shared_mb_sig2 = mem_read((dram_mb_addr + SHAREDMB_SIG2_OFF), 4)
-    if (shared_mb_sig1 == SHAREDMB_SIG1) and (shared_mb_sig2 == SHAREDMB_SIG2):
+    shared_mb_sig1 = mem_read((dram_mb_addr + const.SHAREDMB_SIG1_OFF), 4)
+    shared_mb_sig2 = mem_read((dram_mb_addr + const.SHAREDMB_SIG2_OFF), 4)
+    if (shared_mb_sig1 == const.SHAREDMB_SIG1) and (shared_mb_sig2 == const.SHAREDMB_SIG2):
         cli_spec_version = get_cli_spec_version(dram_mb_addr)
-        share_mb_entry1_sig = mem_read((dram_mb_addr + LEGACYMB_SIG_OFF), 4)
-        if share_mb_entry1_sig == LEGACYMB_SIG:
+        share_mb_entry1_sig = mem_read((dram_mb_addr + const.LEGACYMB_SIG_OFF), 4)
+        if share_mb_entry1_sig == const.LEGACYMB_SIG:
             fix_leg_xml_offset(dram_mb_addr)
         return cli_spec_version
     return False
@@ -363,19 +361,19 @@ def read_xml_details(dram_shared_mailbox_buffer):
     :param dram_shared_mailbox_buffer: Shared Mailbox temporary buffer address
     :return:
     """
-    shared_mb_sig1 = read_buffer(dram_shared_mailbox_buffer, SHAREDMB_SIG1_OFF, 4, HEX)
-    shared_mb_sig2 = read_buffer(dram_shared_mailbox_buffer, SHAREDMB_SIG2_OFF, 4, HEX)
+    shared_mb_sig1 = read_buffer(dram_shared_mailbox_buffer, const.SHAREDMB_SIG1_OFF, 4, const.HEX)
+    shared_mb_sig2 = read_buffer(dram_shared_mailbox_buffer, const.SHAREDMB_SIG2_OFF, 4, const.HEX)
     gbt_xml_addr = 0
     gbt_xml_size = 0
-    if (shared_mb_sig1 == SHAREDMB_SIG1) and (shared_mb_sig2 == SHAREDMB_SIG2):
-        share_mb_entry1_sig = read_buffer(dram_shared_mailbox_buffer, LEGACYMB_SIG_OFF, 4, HEX)
-        if share_mb_entry1_sig == LEGACYMB_SIG:
+    if (shared_mb_sig1 == const.SHAREDMB_SIG1) and (shared_mb_sig2 == const.SHAREDMB_SIG2):
+        share_mb_entry1_sig = read_buffer(dram_shared_mailbox_buffer, const.LEGACYMB_SIG_OFF, 4, const.HEX)
+        if share_mb_entry1_sig == const.LEGACYMB_SIG:
             logger.debug(f"Legacy MB signature found: {share_mb_entry1_sig}")
-            leg_mb_offset = read_buffer(dram_shared_mailbox_buffer, LEGACYMB_OFF, 4, HEX)
+            leg_mb_offset = read_buffer(dram_shared_mailbox_buffer, const.LEGACYMB_OFF, 4, const.HEX)
             if leg_mb_offset > 0xFFFF:
-                gbt_xml_addr = mem_read(leg_mb_offset + LEGACYMB_XML_OFF, 4) + 4
+                gbt_xml_addr = mem_read(leg_mb_offset + const.LEGACYMB_XML_OFF, 4) + 4
             else:
-                gbt_xml_addr = read_buffer(dram_shared_mailbox_buffer, leg_mb_offset + LEGACYMB_XML_OFF, 4, HEX) + 4
+                gbt_xml_addr = read_buffer(dram_shared_mailbox_buffer, leg_mb_offset + const.LEGACYMB_XML_OFF, 4, const.HEX) + 4
             gbt_xml_size = mem_read(gbt_xml_addr - 4, 4)
     return gbt_xml_addr, gbt_xml_size
 
@@ -390,9 +388,9 @@ def is_xml_valid(gbt_xml_address, gbt_xml_size):
     """
     try:
         temp_buffer = read_mem_block(gbt_xml_address, 0x08)  # Read/save parameter buffer
-        system_start = read_buffer(temp_buffer, 0, 0x08, ASCII)
+        system_start = read_buffer(temp_buffer, 0, 0x08, const.ASCII)
         temp_buffer = read_mem_block(gbt_xml_address + gbt_xml_size - 0xB, 0x09)  # Read/save parameter buffer
-        system_end = read_buffer(temp_buffer, 0, 0x09, ASCII)
+        system_end = read_buffer(temp_buffer, 0, 0x09, const.ASCII)
         if (system_start == "<SYSTEM>") and (system_end == "</SYSTEM>"):
             return True
         else:
