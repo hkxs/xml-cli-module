@@ -29,8 +29,6 @@ from pathlib import Path
 class LinuxAccess:
     def __init__(self):
         self.current_directory = os.path.dirname(os.path.abspath(__file__))
-        self.memory_file = "/dev/mem"
-        self.map_mask = mmap.PAGESIZE - 1
         # Read Port library
         self.port_lib_location = Path(__file__).resolve().with_name("libport.lso")
         self.port_library = ctypes.CDLL(self.port_lib_location)
