@@ -25,8 +25,6 @@ import ctypes
 import binascii
 from pathlib import Path
 
-from xmlcli_mod.common.utils import int_to_byte
-
 
 class LinuxAccess:
     def __init__(self):
@@ -72,24 +70,6 @@ class LinuxAccess:
             ret = self._write_port(port, size, val)
             return ret
 
-    def read_memory_bytes(self, address, size):
-        mem_file_obj = os.open(self.memory_file, os.O_RDWR | os.O_SYNC)
-        mem = mmap.mmap(mem_file_obj, mmap.PAGESIZE, mmap.MAP_SHARED, mmap.PROT_WRITE | mmap.PROT_READ,
-                        offset=address & ~self.map_mask)
-        data = None
-        try:
-            mem.seek(address & self.map_mask)
-            data = mem.read(size)
-            mem.close()
-            os.close(mem_file_obj)
-            return data
-        except Exception:  # catch any kind of exception and close /dev/mem file
-            mem.close()
-            os.close(mem_file_obj)
-        if data is None:
-            raise Exception("Unable to read memory on the platform")
-        return data
-
     def read_memory(self, address, size):
         dest = (ctypes.c_ubyte * size)()
         self._read_mem(address, ctypes.cast(dest, ctypes.c_void_p), size)
@@ -98,25 +78,6 @@ class LinuxAccess:
         for i in range(0, size):
             result += dest[i] << 8 * i
         return result
-
-    def write_memory_bytes(self, address, data, size):
-        mem_file_obj = os.open(self.memory_file, os.O_RDWR | os.O_SYNC)
-        mem = mmap.mmap(mem_file_obj, mmap.PAGESIZE, mmap.MAP_SHARED, mmap.PROT_WRITE | mmap.PROT_READ, offset=address & ~self.map_mask)
-        bytes_written = 0
-        try:
-            data_dump = data if isinstance(data, bytes) else int_to_byte(data, size)
-            if data_dump:
-                mem.seek(address & self.map_mask)
-                bytes_written = mem.write(data_dump)
-            mem.close()
-            os.close(mem_file_obj)
-            return data
-        except Exception:  # catch any kind of exception and close /dev/mem file
-            mem.close()
-            os.close(mem_file_obj)
-        if bytes_written == 0:
-            raise Exception("Unable to write memory on the platform")
-        return bytes_written
 
     def write_memory(self, address, data, size):
         if isinstance(data, int):
@@ -142,12 +103,6 @@ class LinuxAccess:
         else:
             ret = self.write_memory(address, val, size)
             return ret
-
-    def warm_reset(self):
-        self.io(0xCF9, 1, 0x06)
-
-    def cold_reset(self):
-        self.io(0xCF9, 1, 0x0E)
 
     def mem_block(self, address, size):
         end_address = address + size
@@ -185,11 +140,6 @@ class LinuxAccess:
     def mem_write(self, address, size, value):
         self.mem(address, size, value)  # list of size entries of 1 Byte
 
-    def load_data(self, filename, address):
-        with open(filename, 'rb') as in_file:  # opening for [r]eading as [b]inary
-            data = in_file.read()  # if you only wanted to read 512 bytes, do .read(512)
-        size = len(data)
-        self.read_memory_block(address, size, data)  # list of size entries of 1 Byte
 
     def read_io(self, address, size):
         return self.io(address, size)
