@@ -25,15 +25,12 @@ import ctypes
 import binascii
 from pathlib import Path
 
-from xmlcli_mod.access.base import base
-
-__all__ = ["LinuxAccess"]
+from xmlcli_mod.common.utils import int_to_byte
 
 
-class LinuxAccess(base.BaseAccess):
-    def __init__(self, access_name="linux"):
+class LinuxAccess:
+    def __init__(self):
         self.current_directory = os.path.dirname(os.path.abspath(__file__))
-        super(LinuxAccess, self).__init__(access_name=access_name, child_class_directory=self.current_directory)
         self.memory_file = "/dev/mem"
         self.map_mask = mmap.PAGESIZE - 1
         # Read Port library
@@ -64,7 +61,7 @@ class LinuxAccess(base.BaseAccess):
         ret = self._read_port(port, size)
         if ret:
             for i in range(0, size):
-                read_val += ret[i] << 8 * (i)
+                read_val += ret[i] << (8 * i)
         return read_val
 
     def io(self, port, size, val=None):
@@ -107,7 +104,7 @@ class LinuxAccess(base.BaseAccess):
         mem = mmap.mmap(mem_file_obj, mmap.PAGESIZE, mmap.MAP_SHARED, mmap.PROT_WRITE | mmap.PROT_READ, offset=address & ~self.map_mask)
         bytes_written = 0
         try:
-            data_dump = data if isinstance(data, bytes) else self.int_to_byte(data, size)
+            data_dump = data if isinstance(data, bytes) else int_to_byte(data, size)
             if data_dump:
                 mem.seek(address & self.map_mask)
                 bytes_written = mem.write(data_dump)
