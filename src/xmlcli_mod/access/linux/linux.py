@@ -20,7 +20,6 @@
 #  SOFTWARE.
 
 import os
-import mmap
 import ctypes
 import binascii
 from pathlib import Path
@@ -28,10 +27,14 @@ from pathlib import Path
 
 class LinuxAccess:
     def __init__(self):
-        self.current_directory = os.path.dirname(os.path.abspath(__file__))
+        port_lib_location = Path(__file__).resolve().with_name("libport.lso")
+        mem_lib_location = Path(__file__).resolve().with_name("libmem.lso")
+        self._setup_port_library(port_lib_location)
+        self._setup_mem_library(mem_lib_location)
+
+    def _setup_port_library(self, library_path: Path):
         # Read Port library
-        self.port_lib_location = Path(__file__).resolve().with_name("libport.lso")
-        self.port_library = ctypes.CDLL(self.port_lib_location)
+        self.port_library = ctypes.CDLL(str(library_path))
         # Read Port configuration
         self._read_port = self.port_library.read_port
         self._read_port.argtypes = (ctypes.c_uint16, ctypes.c_uint8)
@@ -40,9 +43,9 @@ class LinuxAccess:
         self._write_port = self.port_library.write_port
         self._write_port.argtypes = (ctypes.c_uint16, ctypes.c_uint8, ctypes.c_uint32)
 
+    def _setup_mem_library(self, library_path: Path):
         # external memory
-        self.lib_mem = Path(__file__).resolve().with_name("libmem.lso")
-        self.mem_library = ctypes.CDLL(self.lib_mem)
+        self.mem_library = ctypes.CDLL(str(library_path))
         # Read Memory configuration
         self._read_mem = self.mem_library.mem_read
         self._read_mem.argtypes = (ctypes.c_ulong, ctypes.c_void_p, ctypes.c_size_t)
