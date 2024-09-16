@@ -19,16 +19,15 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import defusedxml.ElementTree as ET
 import logging
-
 from pathlib import Path
 from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import ElementTree
 
+import defusedxml.ElementTree as ET
 from xmlcli_mod import xmlclilib
-from xmlcli_mod.common.utils import is_root, str_to_int
 from xmlcli_mod.common.errors import RootError
+from xmlcli_mod.common.utils import is_root, str_to_int
 from xmlcli_mod.dataclasses.knobs import Knob
 
 

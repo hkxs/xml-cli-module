@@ -25,8 +25,6 @@ import logging
 import platform
 
 import xmlcli_mod.common.constants as const
-
-
 from xmlcli_mod.common.errors import BiosKnobsDataUnavailable
 from xmlcli_mod.common.errors import InvalidXmlData
 from xmlcli_mod.common.errors import XmlCliNotSupported
