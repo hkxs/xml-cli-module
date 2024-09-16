@@ -29,7 +29,7 @@ access_path = Path(".").resolve() / "src" / "xmlcli_mod" / "access" / "linux"
 com_args = ["-fPIC"]
 
 ext_modules = [
-    Extension("xmlcli_mod.access.linux.mem", sources=[str(access_path / "mymem.c")], extra_compile_args=com_args),
+    Extension("xmlcli_mod.access.linux.mem", sources=[str(access_path / "mem.c")], extra_compile_args=com_args),
     Extension("xmlcli_mod.access.linux.port", sources=[str(access_path / "port.c")], extra_compile_args=com_args)
 ]
 
