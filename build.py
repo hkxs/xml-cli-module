@@ -42,7 +42,7 @@ class ExtBuilder(build_ext):
             # sometimes the file is not yet compiled but setuptools already mark it as an "output"
             if binary_path.exists():
                 binary_name = binary_path.stem.split(".")[0]  # get just the name of the binary
-                new_binary_name = f"{binary_name}.lso"
+                new_binary_name = f"lib{binary_name}.lso"
                 shutil.copyfile(binary_path, binary_path.with_name(new_binary_name))
                 os.remove(binary_path)
 
