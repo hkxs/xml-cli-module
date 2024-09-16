@@ -42,7 +42,12 @@ generate-setup-file = true
 
 [tool.black]
 line-length = 120
-
+ignore = [
+    "E203",
+    "E501",
+    "E722",
+    "W503"
+]
 
 [tool.flake8]
 max-line-length = 120
@@ -50,3 +55,7 @@ count = true
 per-file-ignores = [
     "__init__.py:F401",
 ]
+
+[tool.mypy]
+files = "src"
+disable_error_code = "import-untyped"

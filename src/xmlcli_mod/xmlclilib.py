@@ -252,7 +252,7 @@ def read_buffer(input_buffer, offset, size, input_type):
 
     :return: buffer read from input
     """
-    value_buffer = input_buffer[offset : offset + size]
+    value_buffer = input_buffer[offset:offset + size]
     value_string = ""
     if len(value_buffer) == 0:
         return 0
