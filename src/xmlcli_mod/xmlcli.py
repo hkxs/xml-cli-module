@@ -145,8 +145,8 @@ class XmlCli:
                     "description": knob.attrib.get("description", ""),
                     "value": knob.attrib.get("CurrentVal", -1),
                     "default": knob.attrib.get("default", -1),
-                    "_size": int(knob.attrib["size"]),
-                    "_offset": int(knob.attrib["offset"]),
+                    "_size": str_to_int(knob.attrib["size"]),
+                    "_offset": str_to_int(knob.attrib["offset"]),
                 }
                 if knob_attributes["knob_type"] == "scalar":
                     if isinstance(knob_attributes["default"], str):

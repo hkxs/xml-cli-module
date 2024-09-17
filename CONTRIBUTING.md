@@ -18,4 +18,4 @@ Feel free to create Pull Request for any bugfix or new feature.
 
 ### Running Flake8
 
-To check your code for style issues, run flake8 and mypy:
+To check your code for style issues, run flake8, mypy and bandit.
