@@ -18,6 +18,10 @@ with an easy-to-use API.
 ## Pre-Requisites
 This module requires XmlCli BIOS driver enabled and ROOT privileges.
 
+> [!IMPORTANT] 
+> This is a Linux only module, there's no support for any other OS. PIP will 
+> fail to install this package on any other OS. 
+
 ## Usage
 
 To use this module simply create an instance of XmlCli:
