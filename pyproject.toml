@@ -10,7 +10,6 @@ authors = ["hkxs <lalvarezf25@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/hkxs/xml-cli-module"
-include = ["CONTRIBUTORS.txt", "NOTICE", "LICENSE"]
 
 classifiers = [
     "License :: OSI Approved :: MIT License",
