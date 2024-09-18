@@ -26,8 +26,8 @@ from pathlib import Path
 
 class LinuxAccess:
     def __init__(self):
-        port_lib_location = Path(__file__).resolve().with_name("libport.lso")
-        mem_lib_location = Path(__file__).resolve().with_name("libmem.lso")
+        port_lib_location = next(Path(__file__).resolve().parent.glob("port*.so"))
+        mem_lib_location = next(Path(__file__).resolve().parent.glob("mem*.so"))
         self._setup_port_library(port_lib_location)
         self._setup_mem_library(mem_lib_location)
 

@@ -19,9 +19,7 @@
 #  SOFTWARE.
 
 import logging
-import os
 import platform
-import shutil
 import sys
 
 from pathlib import Path
@@ -44,11 +42,12 @@ class ExtBuilder(build_ext):
         for output in self.get_outputs():
             binary_path = Path(output)
             # sometimes the file is not yet compiled but setuptools already mark it as an "output"
+            print("!" *30 )
+            print(binary_path)
             if binary_path.exists():
                 binary_name = binary_path.stem.split(".")[0]  # get just the name of the binary
                 new_binary_name = f"lib{binary_name}.lso"
-                shutil.copyfile(binary_path, binary_path.with_name(new_binary_name))
-                os.remove(binary_path)
+                print(binary_path.with_name(new_binary_name))
 
 
 def build(setup_kwargs):
@@ -59,5 +58,6 @@ def build(setup_kwargs):
     if os_platform != "Linux":
         logging.error(f"Unsupported platform '{os_platform}', XmlCli-Module only supported for Linux")
         sys.exit(1)
+
     setup_kwargs.update({"ext_modules": ext_modules})
     setup_kwargs.update({"cmdclass": {"build_ext": ExtBuilder}})
