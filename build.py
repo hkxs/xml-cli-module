@@ -18,8 +18,12 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
+import logging
 import os
+import platform
 import shutil
+import sys
+
 from pathlib import Path
 from setuptools import Extension
 from setuptools.command.build_ext import build_ext
@@ -51,5 +55,9 @@ def build(setup_kwargs):
     """
     This function is mandatory in order to build the extensions.
     """
+    os_platform = platform.system()
+    if os_platform != "Linux":
+        logging.error(f"Unsupported platform '{os_platform}', XmlCli-Module only supported for Linux")
+        sys.exit(1)
     setup_kwargs.update({"ext_modules": ext_modules})
     setup_kwargs.update({"cmdclass": {"build_ext": ExtBuilder}})
