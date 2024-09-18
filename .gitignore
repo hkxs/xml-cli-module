@@ -119,6 +119,7 @@ ENV/
 
 # Pycharm IDE
 .idea
+.run
 
 # VS Code
 .vscode
