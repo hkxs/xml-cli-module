@@ -295,7 +295,6 @@ def fix_leg_xml_offset(dram_mb_addr):
 
 
 def is_leg_mb_sig_valid(dram_mb_addr):
-    global CliSpecRelVersion, CliSpecMajorVersion
     shared_mb_sig1 = mem_read((dram_mb_addr + const.SHAREDMB_SIG1_OFF), 4)
     shared_mb_sig2 = mem_read((dram_mb_addr + const.SHAREDMB_SIG2_OFF), 4)
     if (shared_mb_sig1 == const.SHAREDMB_SIG1) and (shared_mb_sig2 == const.SHAREDMB_SIG2):
