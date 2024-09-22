@@ -17,10 +17,21 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
-from logging import raiseExceptions
+
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files (the “Software”), to deal
+#  in the Software without restriction, including without limitation the rights
+#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#  copies of the Software, and to permit persons to whom the Software is
+#  furnished to do so, subject to the following conditions:
+#
+#
+import platform
+from binascii import hexlify
+
 
 import pytest
-from binascii import hexlify
 
 import xmlcli_mod.common.constants as const
 from xmlcli_mod import xmlclilib
@@ -127,9 +138,73 @@ class TestXmlValid:
         mocker.patch.object(xmlclilib, "read_mem_block", side_effect=[b"bad", b"</SYSTEM>"])
         assert not xmlclilib.is_xml_valid(0, 1)
 
-        mocker.patch.object(xmlclilib, "read_mem_block", side_effect=raiseExceptions)
+        mocker.patch.object(xmlclilib, "read_mem_block", side_effect=Exception)
         assert not xmlclilib.is_xml_valid(0, 1)
 
     def test_is_xml_valid(self, mocker):
         mocker.patch.object(xmlclilib, "read_mem_block", side_effect=[b"<SYSTEM>", b"</SYSTEM>"])
         assert xmlclilib.is_xml_valid(0, 1)
+
+
+class TestAccess:
+    def test_load_os_specific_access_invalid(self, mocker):
+        mocker.patch.object(platform, "system", return_value="INVALID")
+
+        with pytest.raises(RuntimeError) as e:
+            xmlclilib.load_os_specific_access()
+        assert "INVALID" in str(e.value)
+
+    def test_load_os_specific_access_alid(self, mocker):
+        from xmlcli_mod.access.linux import linux
+        mocker.patch.object(platform, "system", return_value="Linux")
+        mocker.patch.object(linux, "LinuxAccess")
+
+        assert xmlclilib.load_os_specific_access()  # just check that we can "load" it
+
+
+class TestFixLeg:
+
+    @pytest.fixture
+    def reset_variables(self):
+        xmlclilib.CliSpecRelVersion = 0
+        xmlclilib.CliSpecMajorVersion = 0
+        xmlclilib.CliSpecMinorVersion = 0
+        const.LEGACYMB_XML_OFF = 0
+
+
+    def test_fix_leg_xml_offset_legacy(self, reset_variables):
+        xmlclilib.CliSpecRelVersion = 1
+        xmlclilib.fix_leg_xml_offset(0)
+        assert const.LEGACYMB_XML_OFF == 0x50
+
+    def test_fix_leg_xml_offset_major_less_seven(self, reset_variables):
+        xmlclilib.CliSpecMajorVersion = 6
+        xmlclilib.fix_leg_xml_offset(0)
+        assert const.LEGACYMB_XML_OFF == 0xc
+
+    def test_fix_leg_xml_offset_seven_one(self, reset_variables):
+        xmlclilib.CliSpecMajorVersion = 7
+        xmlclilib.CliSpecMinorVersion = 1
+        xmlclilib.fix_leg_xml_offset(0)
+        assert const.LEGACYMB_XML_OFF == 0x50
+
+    def test_fix_leg_xml_offset_seven_zero(self, reset_variables, mocker):
+        xmlclilib.CliSpecMajorVersion = 7
+        xmlclilib.CliSpecMinorVersion = 0
+        mocker.patch.object(xmlclilib, "mem_read", side_effect=[0, 0])
+        xmlclilib.fix_leg_xml_offset(0)
+        assert const.LEGACYMB_XML_OFF == 0x50
+
+        mocker.patch.object(xmlclilib, "mem_read", side_effect=[0, 1])
+        xmlclilib.fix_leg_xml_offset(0)
+        assert const.LEGACYMB_XML_OFF == 0x4c
+
+def test_get_version(mocker):
+    xmlclilib.CliSpecRelVersion = 0
+    xmlclilib.CliSpecMajorVersion = 0
+    xmlclilib.CliSpecMinorVersion = 0
+    mocker.patch.object(xmlclilib, "mem_read", side_effect=[1, 2, 3])
+    assert "1.2.3" == xmlclilib.get_cli_spec_version(0)
+    assert xmlclilib.CliSpecRelVersion == 1
+    assert xmlclilib.CliSpecMajorVersion == 2
+    assert xmlclilib.CliSpecMinorVersion == 3
