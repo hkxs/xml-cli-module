@@ -62,7 +62,7 @@ class TestIsLegValid:
 class TestReadBuffer:
 
     def test_read_buffer_no_read(self):
-        assert not xmlclilib.read_buffer([0xc, 0x0, 0xd, 0xe], 0, 0, const.ASCII)
+        assert not xmlclilib.read_buffer(bytearray(b"c0de"), 0, 0, const.ASCII)
 
     def test_read_buffer_ascii(self):
         assert xmlclilib.read_buffer(bytearray(b"c0de"), 0, 1, const.ASCII) == "c"

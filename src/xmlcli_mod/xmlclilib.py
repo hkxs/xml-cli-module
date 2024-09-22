@@ -252,7 +252,7 @@ def read_buffer(input_buffer: bytearray, offset, size, input_type):
     """
     value_buffer = input_buffer[offset:offset + size]
     value_string = ""
-    if len(value_buffer) == 0:
+    if not value_buffer or input_type not in [const.ASCII, const.HEX]:
         return 0
     if input_type == const.ASCII:
         value_string = "".join(chr(value) for value in value_buffer)
@@ -261,7 +261,6 @@ def read_buffer(input_buffer: bytearray, offset, size, input_type):
         for value in value_buffer:
             value_string = f"{value:02x}" + value_string
         return int(value_string, 16)
-    return 0
 
 
 def un_hex_li_fy(value):
