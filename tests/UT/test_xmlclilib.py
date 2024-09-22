@@ -204,6 +204,43 @@ class TestFixLeg:
         xmlclilib.fix_leg_xml_offset(0)
         assert const.LEGACYMB_XML_OFF == 0x4c
 
+
+class TestReadXmlDetails:
+    def test_read_xml_details_invalid(self, mocker):
+        mocker.patch.object(xmlclilib, "read_buffer", side_effect=[0xc0de, 0xbad])
+        address, size = xmlclilib.read_xml_details(0)
+        assert not address
+        assert not size
+
+        mocker.patch.object(xmlclilib, "read_buffer", side_effect=[const.SHAREDMB_SIG1, 0xbad])
+        address, size = xmlclilib.read_xml_details(0)
+        assert not address
+        assert not size
+
+        mocker.patch.object(xmlclilib, "read_buffer", side_effect=[0xc0de, const.SHAREDMB_SIG2])
+        address, size = xmlclilib.read_xml_details(0)
+        assert not address
+        assert not size
+
+        mocker.patch.object(xmlclilib, "read_buffer", side_effect=[const.SHAREDMB_SIG1, const.SHAREDMB_SIG2, 0x0])
+        address, size = xmlclilib.read_xml_details(0)
+        assert not address
+        assert not size
+
+    def test_read_xml_details(self, mocker):
+        mocker.patch.object(xmlclilib, "read_buffer", side_effect=[const.SHAREDMB_SIG1, const.SHAREDMB_SIG2, const.LEGACYMB_SIG, 0xFFFFFFFF])
+        mocker.patch.object(xmlclilib, "mem_read", side_effect=[0xc0de-4, 0xbad])
+        address, size = xmlclilib.read_xml_details(0)
+        assert address == 0xc0de
+        assert size == 0xbad
+
+        mocker.patch.object(xmlclilib, "read_buffer", side_effect=[const.SHAREDMB_SIG1, const.SHAREDMB_SIG2, const.LEGACYMB_SIG, 0x0, 0xc0de-4])
+        mocker.patch.object(xmlclilib, "mem_read", side_effect=[0xbad])
+        address, size = xmlclilib.read_xml_details(0)
+        assert address == 0xc0de
+        assert size == 0xbad
+
+
 def test_get_version(mocker):
     xmlclilib.CliSpecRelVersion = 0
     xmlclilib.CliSpecMajorVersion = 0
