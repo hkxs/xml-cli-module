@@ -276,21 +276,23 @@ def get_cli_spec_version(dram_mb_addr):
 
 
 def fix_leg_xml_offset(dram_mb_addr):
-    global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion
-    const.LEGACYMB_XML_OFF = 0x0C
-    if CliSpecRelVersion == 0:
-        if CliSpecMajorVersion >= 7:
-            const.LEGACYMB_XML_OFF = 0x50
-            if (CliSpecMajorVersion == 7) and (CliSpecMinorVersion == 0):
-                leg_mb_offset = mem_read((dram_mb_addr + const.LEGACYMB_OFF), 4)
-                if leg_mb_offset < 0xFFFF:
-                    leg_mb_offset = dram_mb_addr + leg_mb_offset
-                if mem_read((leg_mb_offset + 0x4C), 4) == 0:
-                    const.LEGACYMB_XML_OFF = 0x50
-                else:
-                    const.LEGACYMB_XML_OFF = 0x4C
-    else:
+    global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion  # just for reading
+
+    if CliSpecRelVersion:
         const.LEGACYMB_XML_OFF = 0x50
+    elif (CliSpecMajorVersion == 7) and (CliSpecMinorVersion == 0):
+        leg_mb_offset = mem_read((dram_mb_addr + const.LEGACYMB_OFF), 4)
+        if leg_mb_offset < 0xFFFF:
+            leg_mb_offset = dram_mb_addr + leg_mb_offset
+
+        if mem_read((leg_mb_offset + 0x4C), 4):
+            const.LEGACYMB_XML_OFF = 0x4C
+        else:
+            const.LEGACYMB_XML_OFF = 0x50
+    elif CliSpecMajorVersion >= 7:
+        const.LEGACYMB_XML_OFF = 0x50
+    else:
+        const.LEGACYMB_XML_OFF = 0x0C
 
 
 def is_leg_mb_sig_valid(dram_mb_addr):

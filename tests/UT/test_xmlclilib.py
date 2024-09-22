@@ -188,6 +188,11 @@ class TestFixLeg:
         xmlclilib.fix_leg_xml_offset(0)
         assert const.LEGACYMB_XML_OFF == 0x50
 
+        xmlclilib.CliSpecMajorVersion = 8
+        xmlclilib.CliSpecMinorVersion = 0
+        xmlclilib.fix_leg_xml_offset(0)
+        assert const.LEGACYMB_XML_OFF == 0x50
+
     def test_fix_leg_xml_offset_seven_zero(self, reset_variables, mocker):
         xmlclilib.CliSpecMajorVersion = 7
         xmlclilib.CliSpecMinorVersion = 0
