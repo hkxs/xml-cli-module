@@ -54,13 +54,13 @@ def load_os_specific_access():
     return access_class()
 
 
-def set_cli_access():
+def set_cli_access():  # pragma: no cover, this should go away with refactoring
     global cli_access
     if not cli_access:
         cli_access = load_os_specific_access()
 
 
-def _check_cli_access():
+def _check_cli_access():  # pragma: no cover, this should go away with refactoring
     global cli_access
     if not cli_access:
         # not going to bother with a custom exception in code that needs to be
@@ -68,7 +68,7 @@ def _check_cli_access():
         raise SystemError("Uninitialized Access")
 
 
-def read_mem_block(address, size):
+def read_mem_block(address, size):  # pragma: no cover, this should go away with refactoring
     """
     Reads the data block of given size from target memory
     starting from given address.
@@ -85,7 +85,7 @@ def read_mem_block(address, size):
     return cli_access.mem_block(address, size)
 
 
-def mem_save(filename, address, size):
+def mem_save(filename, address, size):  # pragma: no cover, this should go away with refactoring
     """
     Saves the memory block of given byte size to desired file
 
@@ -99,7 +99,7 @@ def mem_save(filename, address, size):
     return cli_access.mem_save(filename, address, size)
 
 
-def mem_read(address, size):
+def mem_read(address, size):  # pragma: no cover, this should go away with refactoring
     """
     This function reads data from specific memory.
     It can be used to read Maximum `8 bytes` of data.
@@ -115,7 +115,7 @@ def mem_read(address, size):
     return int(cli_access.mem_read(address, size))
 
 
-def mem_write(address, size, value):
+def mem_write(address, size, value):  # pragma: no cover, this should go away with refactoring
     """
     This function writes data to specific memory.
     It can be used to write Maximum `8 bytes` of data.
@@ -132,7 +132,7 @@ def mem_write(address, size, value):
     return cli_access.mem_write(address, size, value)
 
 
-def read_io(address, size):
+def read_io(address, size):  # pragma: no cover, this should go away with refactoring
     """
     Read data from IO ports
 
@@ -145,7 +145,7 @@ def read_io(address, size):
     return int(cli_access.read_io(address, size))
 
 
-def write_io(address, size, value):
+def write_io(address, size, value):  # pragma: no cover, this should go away with refactoring
     """
     Write requested value of data to specified IO port
 
@@ -159,7 +159,7 @@ def write_io(address, size, value):
     return cli_access.write_io(address, size, value)
 
 
-def trigger_smi(smi_val):
+def trigger_smi(smi_val):  # pragma: no cover, this should go away with refactoring
     """
     Triggers the software SMI of desired value. Triggering SMI involves writing
     desired value to port 0x72.
