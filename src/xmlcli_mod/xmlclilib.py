@@ -173,7 +173,7 @@ def trigger_smi(smi_val):
     return cli_access.trigger_smi(smi_val)
 
 
-def read_cmos(register_address):
+def read_cmos(register_address):  # pragma: no cover, not used for now
     """
     Read CMOS register value
 
@@ -186,7 +186,7 @@ def read_cmos(register_address):
     return value
 
 
-def write_cmos(register_address, value):
+def write_cmos(register_address, value):  # pragma: no cover, not used for now
     """
     Write value to CMOS address register
 
@@ -203,7 +203,7 @@ def write_cmos(register_address, value):
         write_io(0x73, 1, value)
 
 
-def clear_cmos():
+def clear_cmos():  # pragma: no cover, not used for now
     """
     Clear all CMOS locations to 0 and set CMOS BAD flag.
 
@@ -263,7 +263,7 @@ def read_buffer(input_buffer: bytearray, offset, size, input_type):
         return int(value_string, 16)
 
 
-def un_hex_li_fy(value):
+def un_hex_li_fy(value):  # pragma: no cover, not used for now
     return binascii.unhexlify((hex(value)[2:]).strip("L")).decode()
 
 
@@ -401,7 +401,7 @@ def is_xml_valid(gbt_xml_address, gbt_xml_size):
 
 # TODO this seems helpful in some way, it can/should be used to determine if
 # everything is setup properly on the platform
-def is_xml_generated():
+def is_xml_generated():  # pragma: no cover, not used for now
     status = 0
     dram_mb_addr = get_dram_mb_addr()  # Get DRam Mailbox Address from Cmos.
     logger.debug(f"CLI Spec Version = {get_cli_spec_version(dram_mb_addr)}")
@@ -445,7 +445,7 @@ def get_xml():
 
 
 # TODO I see potential on this, but the implementation was really bad
-def get_bios_details():
+def get_bios_details():  # pragma: no cover, not used for now
     """
     Extract BIOS Version details from XML.
 
@@ -463,7 +463,7 @@ def get_bios_details():
     """
 
 
-def get_efi_compatible_table_base():
+def get_efi_compatible_table_base():  # pragma: no cover, not used for now
     """Search for the EFI Compatible tables in 0xE000/F000 segments
 
     Use-case would be to find DramMailbox in legacy way
@@ -486,7 +486,7 @@ def get_efi_compatible_table_base():
     return 0
 
 
-def search_for_system_table_address():
+def search_for_system_table_address():  # pragma: no cover, not used for now
     for address in range(0x20000000, 0xE0000000, 0x400000):  # EFI_SYSTEM_TABLE_POINTER address is 4MB aligned
         signature = mem_read(address, 8)
         if signature == 0x5453595320494249:  # EFI System Table signature = 'IBI SYST'
@@ -496,7 +496,7 @@ def search_for_system_table_address():
 
 
 # TODO this also seems kind of helpful
-def read_dram_mb_addr_from_efi():
+def read_dram_mb_addr_from_efi():  # pragma: no cover, not used for now
     dram_shared_mail_box_guid_low = 0x4D2C18789D99A394
     dram_shared_mail_box_guid_high = 0x3379C48E6BC1E998
     logger.debug("Searching for Dram Shared Mailbox address from g_st EfiConfigTable..")
@@ -541,7 +541,7 @@ def read_dram_mb_addr_from_efi():
 
 
 # TODO I want to revisit this method to learn about this legacy memory map
-def print_e820_table():
+def print_e820_table():  # pragma: no cover, not used for now
     """Legacy function for printing E820 table for memory type identification using
     legacy efi compatible table
 
