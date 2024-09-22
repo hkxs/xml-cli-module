@@ -255,7 +255,7 @@ def read_buffer(input_buffer, offset, size, input_type):
     if len(value_buffer) == 0:
         return 0
     if input_type == const.ASCII:
-        value_string = "".join(chr(value_buffer[i]) for i in range(len(value_buffer)))
+        value_string = "".join(chr(value) for value in value_buffer)
         return value_string
     if input_type == const.HEX:
         for count in range(len(value_buffer)):

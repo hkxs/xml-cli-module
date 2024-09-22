@@ -57,3 +57,17 @@ class TestIsLegValid:
         mocker.patch.object(xmlclilib, "mem_read", side_effect=[const.SHAREDMB_SIG1, const.SHAREDMB_SIG2, const.LEGACYMB_SIG])
 
         assert xmlclilib.is_leg_mb_sig_valid(0xc0de) == mocked_version
+
+
+class TestReadBuffer:
+
+    def test_read_buffer_ascii_no_read(self):
+        assert not xmlclilib.read_buffer([0xc, 0x0, 0xd, 0xe], 0, 0, const.ASCII)
+
+    def test_read_buffer_ascii_read(self):
+        assert xmlclilib.read_buffer([0xc, 0x0, 0xd, 0xe], 0, 1, const.ASCII) == chr(0xc)
+        assert xmlclilib.read_buffer([0xc, 0x0, 0xd, 0xe], 0, 2, const.ASCII) == f"{chr(0xc)}{chr(0x0)}"
+        assert xmlclilib.read_buffer([0xc, 0x0, 0xd, 0xe], 1, 3, const.ASCII) == f"{chr(0x0)}{chr(0xd)}{chr(0xe)}"
+
+        # test size out of bounds
+        assert xmlclilib.read_buffer([0xc, 0x0, 0xd, 0xe], 1, 5, const.ASCII) == f"{chr(0x0)}{chr(0xd)}{chr(0xe)}"
