@@ -17,7 +17,9 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
+from logging import raiseExceptions
 
+import pytest
 from binascii import hexlify
 
 import xmlcli_mod.common.constants as const
@@ -112,3 +114,22 @@ class TestGetDramMbAddr:
         mocker.patch.object(xmlclilib, "read_io", side_effect=[0x0, 0x0, 0xde, 0xc0])
         mocker.patch.object(xmlclilib, "is_leg_mb_sig_valid", side_effect=[False, True])
         assert xmlclilib.get_dram_mb_addr() == 0xc0de0000
+
+
+class TestXmlValid:
+    def test_is_xml_valid_invalid(self, mocker):
+        mocker.patch.object(xmlclilib, "read_mem_block", side_effect=[b"bad", b"c0de"])
+        assert not xmlclilib.is_xml_valid(0, 1)
+
+        mocker.patch.object(xmlclilib, "read_mem_block", side_effect=[b"<SYSTEM>", b"c0de"])
+        assert not xmlclilib.is_xml_valid(0, 1)
+
+        mocker.patch.object(xmlclilib, "read_mem_block", side_effect=[b"bad", b"</SYSTEM>"])
+        assert not xmlclilib.is_xml_valid(0, 1)
+
+        mocker.patch.object(xmlclilib, "read_mem_block", side_effect=raiseExceptions)
+        assert not xmlclilib.is_xml_valid(0, 1)
+
+    def test_is_xml_valid(self, mocker):
+        mocker.patch.object(xmlclilib, "read_mem_block", side_effect=[b"<SYSTEM>", b"</SYSTEM>"])
+        assert xmlclilib.is_xml_valid(0, 1)

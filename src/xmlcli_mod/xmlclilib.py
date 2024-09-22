@@ -311,7 +311,7 @@ def get_dram_mb_addr():
 
     :return:
     """
-    global gDramSharedMbAddr
+    global gDramSharedMbAddr  # just read it
     write_io(0x72, 1, 0xF0)  # Write a byte to cmos offset 0xF0
     result0 = int(read_io(0x73, 1) & 0xFF)  # Read a byte from cmos offset 0xBB [23:16]
     write_io(0x72, 1, 0xF1)  # Write a byte to cmos offset 0xF1
@@ -390,13 +390,13 @@ def is_xml_valid(gbt_xml_address, gbt_xml_size):
         system_start = read_buffer(temp_buffer, 0, 0x08, const.ASCII)
         temp_buffer = read_mem_block(gbt_xml_address + gbt_xml_size - 0xB, 0x09)  # Read/save parameter buffer
         system_end = read_buffer(temp_buffer, 0, 0x09, const.ASCII)
-        if (system_start == "<SYSTEM>") and (system_end == "</SYSTEM>"):
-            return True
-        else:
-            return False
+        is_valid = True if (system_start == "<SYSTEM>") and (system_end == "</SYSTEM>") else False
     except Exception as e:
         logger.error(f"Exception detected when determining if xml is valid.\n {e}")
-        return False
+        is_valid = False
+
+    return is_valid
+
 
 
 # TODO this seems helpful in some way, it can/should be used to determine if
