@@ -61,4 +61,4 @@ exclude_dirs = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--cov=xmlcli_mod --cov-report html --cov-branch"
+addopts = "--cov=xmlcli_mod --cov-report html --cov-branch --cov-fail-under=60"
