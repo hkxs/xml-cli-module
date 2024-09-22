@@ -61,13 +61,18 @@ class TestIsLegValid:
 
 class TestReadBuffer:
 
-    def test_read_buffer_ascii_no_read(self):
+    def test_read_buffer_no_read(self):
         assert not xmlclilib.read_buffer([0xc, 0x0, 0xd, 0xe], 0, 0, const.ASCII)
 
-    def test_read_buffer_ascii_read(self):
-        assert xmlclilib.read_buffer([0xc, 0x0, 0xd, 0xe], 0, 1, const.ASCII) == chr(0xc)
-        assert xmlclilib.read_buffer([0xc, 0x0, 0xd, 0xe], 0, 2, const.ASCII) == f"{chr(0xc)}{chr(0x0)}"
-        assert xmlclilib.read_buffer([0xc, 0x0, 0xd, 0xe], 1, 3, const.ASCII) == f"{chr(0x0)}{chr(0xd)}{chr(0xe)}"
+    def test_read_buffer_ascii(self):
+        assert xmlclilib.read_buffer(bytearray(b"c0de"), 0, 1, const.ASCII) == "c"
+        assert xmlclilib.read_buffer(bytearray(b"c0de"), 0, 2, const.ASCII) == "c0"
+        assert xmlclilib.read_buffer(bytearray(b"c0de"), 1, 3, const.ASCII) == "0de"
+        assert xmlclilib.read_buffer(bytearray(b"c0de"), 1, 5, const.ASCII) == "0de"  # test size out of bounds
 
-        # test size out of bounds
-        assert xmlclilib.read_buffer([0xc, 0x0, 0xd, 0xe], 1, 5, const.ASCII) == f"{chr(0x0)}{chr(0xd)}{chr(0xe)}"
+    def test_read_buffer_hex(self):
+        from binascii import hexlify
+        assert xmlclilib.read_buffer(bytearray(b"c0de"), 0, 1, const.HEX) == int(hexlify(b"c"), 16)
+        assert xmlclilib.read_buffer(bytearray(b"c0de"), 0, 2, const.HEX) == int(hexlify(b"0c"), 16)
+        assert xmlclilib.read_buffer(bytearray(b"c0de"), 1, 3, const.HEX) == int(hexlify(b"ed0"), 16)
+        assert xmlclilib.read_buffer(bytearray(b"c0de"), 1, 5, const.HEX) == int(hexlify(b"ed0"), 16) # test size out of bounds

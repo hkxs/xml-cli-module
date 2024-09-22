@@ -236,7 +236,7 @@ def clear_cmos():
     write_io(0xCFC, 2, rtc_value)  # set cmos bad in PCH RTC register
 
 
-def read_buffer(input_buffer, offset, size, input_type):
+def read_buffer(input_buffer: bytearray, offset, size, input_type):
     """
     This function reads the desired format of data of specified size
     from the given offset of buffer.
