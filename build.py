@@ -37,8 +37,14 @@ ext_modules = [
 
 
 class ExtBuilder(build_ext):
+    """ Extends base builder
+
+    Originally used to rename the compiled artifacts, leave it in case we need
+    to update binaries later on
+    """
     def build_extension(self, ext):
         super().build_extension(ext)
+
 
 def build(setup_kwargs):
     """
