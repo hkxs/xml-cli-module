@@ -39,16 +39,6 @@ ext_modules = [
 class ExtBuilder(build_ext):
     def build_extension(self, ext):
         super().build_extension(ext)
-        for output in self.get_outputs():
-            binary_path = Path(output)
-            # sometimes the file is not yet compiled but setuptools already mark it as an "output"
-            print("!" *30 )
-            print(binary_path)
-            if binary_path.exists():
-                binary_name = binary_path.stem.split(".")[0]  # get just the name of the binary
-                new_binary_name = f"lib{binary_name}.lso"
-                print(binary_path.with_name(new_binary_name))
-
 
 def build(setup_kwargs):
     """
