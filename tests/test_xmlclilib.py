@@ -60,7 +60,6 @@ class TestIsLegValid:
 
 
 class TestReadBuffer:
-
     def test_read_buffer_no_read(self):
         assert not xmlclilib.read_buffer(bytearray(b"c0de"), 0, 0, const.ASCII)
 
@@ -78,3 +77,38 @@ class TestReadBuffer:
 
     def test_read_buffer_invalid_type(self):
         assert not xmlclilib.read_buffer(bytearray(b"c0de"), 0, 1, "other thing")
+
+
+class TestGetDramMbAddr:
+    def test_get_dram_mb_addr_zero(self, mocker):
+        xmlclilib.gDramSharedMbAddr = 0
+        mocker.patch.object(xmlclilib, "read_io", return_value=0)
+        mocker.patch.object(xmlclilib, "write_io")
+        mocker.patch.object(xmlclilib, "is_leg_mb_sig_valid", return_value=False)
+        assert not xmlclilib.get_dram_mb_addr()
+
+    def test_get_dram_mb_addr_reuse(self, mocker):
+        xmlclilib.gDramSharedMbAddr = 0xc0de
+        mocker.patch.object(xmlclilib, "read_io", return_value=0)
+        mocker.patch.object(xmlclilib, "write_io")
+        mocker.patch.object(xmlclilib, "get_cli_spec_version")
+        mocker.patch.object(xmlclilib, "is_leg_mb_sig_valid", side_effect=[False, False, False])
+        assert not xmlclilib.get_dram_mb_addr()
+
+        mocker.patch.object(xmlclilib, "is_leg_mb_sig_valid", side_effect=[False, False, True])
+        assert xmlclilib.get_dram_mb_addr() == 0xc0de
+
+    def test_get_dram_mb_addr_valid_first_try(self, mocker):
+        xmlclilib.gDramSharedMbAddr = 0
+        mocker.patch.object(xmlclilib, "write_io")
+        mocker.patch.object(xmlclilib, "read_io", side_effect=[0xde, 0xc0])
+        mocker.patch.object(xmlclilib, "is_leg_mb_sig_valid", return_value=True)
+        assert xmlclilib.get_dram_mb_addr() == 0xc0de0000
+
+    def test_get_dram_mb_addr_valid_second_try(self, mocker):
+        xmlclilib.gDramSharedMbAddr = 0
+        mocker.patch.object(xmlclilib, "write_io")
+        mocker.patch.object(xmlclilib, "get_cli_spec_version")
+        mocker.patch.object(xmlclilib, "read_io", side_effect=[0x0, 0x0, 0xde, 0xc0])
+        mocker.patch.object(xmlclilib, "is_leg_mb_sig_valid", side_effect=[False, True])
+        assert xmlclilib.get_dram_mb_addr() == 0xc0de0000
