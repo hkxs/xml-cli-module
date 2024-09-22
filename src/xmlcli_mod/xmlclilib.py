@@ -258,8 +258,8 @@ def read_buffer(input_buffer: bytearray, offset, size, input_type):
         value_string = "".join(chr(value) for value in value_buffer)
         return value_string
     if input_type == const.HEX:
-        for count in range(len(value_buffer)):
-            value_string = f"{value_buffer[count]:02x}" + value_string
+        for value in value_buffer:
+            value_string = f"{value:02x}" + value_string
         return int(value_string, 16)
     return 0
 

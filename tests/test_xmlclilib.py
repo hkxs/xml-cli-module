@@ -18,7 +18,7 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import pytest
+from binascii import hexlify
 
 import xmlcli_mod.common.constants as const
 from xmlcli_mod import xmlclilib
@@ -71,8 +71,10 @@ class TestReadBuffer:
         assert xmlclilib.read_buffer(bytearray(b"c0de"), 1, 5, const.ASCII) == "0de"  # test size out of bounds
 
     def test_read_buffer_hex(self):
-        from binascii import hexlify
         assert xmlclilib.read_buffer(bytearray(b"c0de"), 0, 1, const.HEX) == int(hexlify(b"c"), 16)
         assert xmlclilib.read_buffer(bytearray(b"c0de"), 0, 2, const.HEX) == int(hexlify(b"0c"), 16)
         assert xmlclilib.read_buffer(bytearray(b"c0de"), 1, 3, const.HEX) == int(hexlify(b"ed0"), 16)
         assert xmlclilib.read_buffer(bytearray(b"c0de"), 1, 5, const.HEX) == int(hexlify(b"ed0"), 16) # test size out of bounds
+
+    def test_read_buffer_invalid_type(self):
+        assert not xmlclilib.read_buffer(bytearray(b"c0de"), 0, 1, "other thing")
