@@ -54,13 +54,13 @@ def load_os_specific_access():
     return access_class()
 
 
-def set_cli_access():
+def set_cli_access():  # pragma: no cover, this should go away with refactoring
     global cli_access
     if not cli_access:
         cli_access = load_os_specific_access()
 
 
-def _check_cli_access():
+def _check_cli_access():  # pragma: no cover, this should go away with refactoring
     global cli_access
     if not cli_access:
         # not going to bother with a custom exception in code that needs to be
@@ -68,7 +68,7 @@ def _check_cli_access():
         raise SystemError("Uninitialized Access")
 
 
-def read_mem_block(address, size):
+def read_mem_block(address, size):  # pragma: no cover, this should go away with refactoring
     """
     Reads the data block of given size from target memory
     starting from given address.
@@ -85,7 +85,7 @@ def read_mem_block(address, size):
     return cli_access.mem_block(address, size)
 
 
-def mem_save(filename, address, size):
+def mem_save(filename, address, size):  # pragma: no cover, this should go away with refactoring
     """
     Saves the memory block of given byte size to desired file
 
@@ -99,7 +99,7 @@ def mem_save(filename, address, size):
     return cli_access.mem_save(filename, address, size)
 
 
-def mem_read(address, size):
+def mem_read(address, size):  # pragma: no cover, this should go away with refactoring
     """
     This function reads data from specific memory.
     It can be used to read Maximum `8 bytes` of data.
@@ -115,7 +115,7 @@ def mem_read(address, size):
     return int(cli_access.mem_read(address, size))
 
 
-def mem_write(address, size, value):
+def mem_write(address, size, value):  # pragma: no cover, this should go away with refactoring
     """
     This function writes data to specific memory.
     It can be used to write Maximum `8 bytes` of data.
@@ -132,7 +132,7 @@ def mem_write(address, size, value):
     return cli_access.mem_write(address, size, value)
 
 
-def read_io(address, size):
+def read_io(address, size):  # pragma: no cover, this should go away with refactoring
     """
     Read data from IO ports
 
@@ -145,7 +145,7 @@ def read_io(address, size):
     return int(cli_access.read_io(address, size))
 
 
-def write_io(address, size, value):
+def write_io(address, size, value):  # pragma: no cover, this should go away with refactoring
     """
     Write requested value of data to specified IO port
 
@@ -159,7 +159,7 @@ def write_io(address, size, value):
     return cli_access.write_io(address, size, value)
 
 
-def trigger_smi(smi_val):
+def trigger_smi(smi_val):  # pragma: no cover, this should go away with refactoring
     """
     Triggers the software SMI of desired value. Triggering SMI involves writing
     desired value to port 0x72.
@@ -173,7 +173,7 @@ def trigger_smi(smi_val):
     return cli_access.trigger_smi(smi_val)
 
 
-def read_cmos(register_address):
+def read_cmos(register_address):  # pragma: no cover, not used for now
     """
     Read CMOS register value
 
@@ -186,7 +186,7 @@ def read_cmos(register_address):
     return value
 
 
-def write_cmos(register_address, value):
+def write_cmos(register_address, value):  # pragma: no cover, not used for now
     """
     Write value to CMOS address register
 
@@ -203,7 +203,7 @@ def write_cmos(register_address, value):
         write_io(0x73, 1, value)
 
 
-def clear_cmos():
+def clear_cmos():  # pragma: no cover, not used for now
     """
     Clear all CMOS locations to 0 and set CMOS BAD flag.
 
@@ -236,7 +236,7 @@ def clear_cmos():
     write_io(0xCFC, 2, rtc_value)  # set cmos bad in PCH RTC register
 
 
-def read_buffer(input_buffer, offset, size, input_type):
+def read_buffer(input_buffer: bytearray, offset, size, input_type):
     """
     This function reads the desired format of data of specified size
     from the given offset of buffer.
@@ -252,19 +252,18 @@ def read_buffer(input_buffer, offset, size, input_type):
     """
     value_buffer = input_buffer[offset:offset + size]
     value_string = ""
-    if len(value_buffer) == 0:
+    if not value_buffer or input_type not in [const.ASCII, const.HEX]:
         return 0
     if input_type == const.ASCII:
-        value_string = "".join(chr(value_buffer[i]) for i in range(len(value_buffer)))
+        value_string = "".join(chr(value) for value in value_buffer)
         return value_string
     if input_type == const.HEX:
-        for count in range(len(value_buffer)):
-            value_string = f"{value_buffer[count]:02x}" + value_string
+        for value in value_buffer:
+            value_string = f"{value:02x}" + value_string
         return int(value_string, 16)
-    return 0
 
 
-def un_hex_li_fy(value):
+def un_hex_li_fy(value):  # pragma: no cover, not used for now
     return binascii.unhexlify((hex(value)[2:]).strip("L")).decode()
 
 
@@ -277,25 +276,26 @@ def get_cli_spec_version(dram_mb_addr):
 
 
 def fix_leg_xml_offset(dram_mb_addr):
-    global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion
-    const.LEGACYMB_XML_OFF = 0x0C
-    if CliSpecRelVersion == 0:
-        if CliSpecMajorVersion >= 7:
-            const.LEGACYMB_XML_OFF = 0x50
-            if (CliSpecMajorVersion == 7) and (CliSpecMinorVersion == 0):
-                leg_mb_offset = mem_read((dram_mb_addr + const.LEGACYMB_OFF), 4)
-                if leg_mb_offset < 0xFFFF:
-                    leg_mb_offset = dram_mb_addr + leg_mb_offset
-                if mem_read((leg_mb_offset + 0x4C), 4) == 0:
-                    const.LEGACYMB_XML_OFF = 0x50
-                else:
-                    const.LEGACYMB_XML_OFF = 0x4C
-    else:
+    global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion  # just for reading
+
+    if CliSpecRelVersion:
         const.LEGACYMB_XML_OFF = 0x50
+    elif (CliSpecMajorVersion == 7) and (CliSpecMinorVersion == 0):
+        leg_mb_offset = mem_read((dram_mb_addr + const.LEGACYMB_OFF), 4)
+        if leg_mb_offset < 0xFFFF:
+            leg_mb_offset = dram_mb_addr + leg_mb_offset
+
+        if mem_read((leg_mb_offset + 0x4C), 4):
+            const.LEGACYMB_XML_OFF = 0x4C
+        else:
+            const.LEGACYMB_XML_OFF = 0x50
+    elif CliSpecMajorVersion >= 7:
+        const.LEGACYMB_XML_OFF = 0x50
+    else:
+        const.LEGACYMB_XML_OFF = 0x0C
 
 
 def is_leg_mb_sig_valid(dram_mb_addr):
-    global CliSpecRelVersion, CliSpecMajorVersion
     shared_mb_sig1 = mem_read((dram_mb_addr + const.SHAREDMB_SIG1_OFF), 4)
     shared_mb_sig2 = mem_read((dram_mb_addr + const.SHAREDMB_SIG2_OFF), 4)
     if (shared_mb_sig1 == const.SHAREDMB_SIG1) and (shared_mb_sig2 == const.SHAREDMB_SIG2):
@@ -313,7 +313,7 @@ def get_dram_mb_addr():
 
     :return:
     """
-    global gDramSharedMbAddr
+    global gDramSharedMbAddr  # just read it
     write_io(0x72, 1, 0xF0)  # Write a byte to cmos offset 0xF0
     result0 = int(read_io(0x73, 1) & 0xFF)  # Read a byte from cmos offset 0xBB [23:16]
     write_io(0x72, 1, 0xF1)  # Write a byte to cmos offset 0xF1
@@ -392,18 +392,17 @@ def is_xml_valid(gbt_xml_address, gbt_xml_size):
         system_start = read_buffer(temp_buffer, 0, 0x08, const.ASCII)
         temp_buffer = read_mem_block(gbt_xml_address + gbt_xml_size - 0xB, 0x09)  # Read/save parameter buffer
         system_end = read_buffer(temp_buffer, 0, 0x09, const.ASCII)
-        if (system_start == "<SYSTEM>") and (system_end == "</SYSTEM>"):
-            return True
-        else:
-            return False
+        is_valid = True if (system_start == "<SYSTEM>") and (system_end == "</SYSTEM>") else False
     except Exception as e:
         logger.error(f"Exception detected when determining if xml is valid.\n {e}")
-        return False
+        is_valid = False
+
+    return is_valid
 
 
 # TODO this seems helpful in some way, it can/should be used to determine if
 # everything is setup properly on the platform
-def is_xml_generated():
+def is_xml_generated():  # pragma: no cover, not used for now
     status = 0
     dram_mb_addr = get_dram_mb_addr()  # Get DRam Mailbox Address from Cmos.
     logger.debug(f"CLI Spec Version = {get_cli_spec_version(dram_mb_addr)}")
@@ -447,7 +446,7 @@ def get_xml():
 
 
 # TODO I see potential on this, but the implementation was really bad
-def get_bios_details():
+def get_bios_details():  # pragma: no cover, not used for now
     """
     Extract BIOS Version details from XML.
 
@@ -465,7 +464,7 @@ def get_bios_details():
     """
 
 
-def get_efi_compatible_table_base():
+def get_efi_compatible_table_base():  # pragma: no cover, not used for now
     """Search for the EFI Compatible tables in 0xE000/F000 segments
 
     Use-case would be to find DramMailbox in legacy way
@@ -488,7 +487,7 @@ def get_efi_compatible_table_base():
     return 0
 
 
-def search_for_system_table_address():
+def search_for_system_table_address():  # pragma: no cover, not used for now
     for address in range(0x20000000, 0xE0000000, 0x400000):  # EFI_SYSTEM_TABLE_POINTER address is 4MB aligned
         signature = mem_read(address, 8)
         if signature == 0x5453595320494249:  # EFI System Table signature = 'IBI SYST'
@@ -498,7 +497,7 @@ def search_for_system_table_address():
 
 
 # TODO this also seems kind of helpful
-def read_dram_mb_addr_from_efi():
+def read_dram_mb_addr_from_efi():  # pragma: no cover, not used for now
     dram_shared_mail_box_guid_low = 0x4D2C18789D99A394
     dram_shared_mail_box_guid_high = 0x3379C48E6BC1E998
     logger.debug("Searching for Dram Shared Mailbox address from g_st EfiConfigTable..")
@@ -543,7 +542,7 @@ def read_dram_mb_addr_from_efi():
 
 
 # TODO I want to revisit this method to learn about this legacy memory map
-def print_e820_table():
+def print_e820_table():  # pragma: no cover, not used for now
     """Legacy function for printing E820 table for memory type identification using
     legacy efi compatible table
 
