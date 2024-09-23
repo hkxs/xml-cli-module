@@ -21,7 +21,6 @@
 import platform
 from binascii import hexlify
 
-
 import pytest
 
 import xmlcli_mod.common.constants as const
