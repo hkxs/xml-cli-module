@@ -400,7 +400,6 @@ def is_xml_valid(gbt_xml_address, gbt_xml_size):
     return is_valid
 
 
-
 # TODO this seems helpful in some way, it can/should be used to determine if
 # everything is setup properly on the platform
 def is_xml_generated():  # pragma: no cover, not used for now
