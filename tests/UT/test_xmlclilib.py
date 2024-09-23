@@ -18,15 +18,6 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-#
-#  Permission is hereby granted, free of charge, to any person obtaining a copy
-#  of this software and associated documentation files (the “Software”), to deal
-#  in the Software without restriction, including without limitation the rights
-#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#  copies of the Software, and to permit persons to whom the Software is
-#  furnished to do so, subject to the following conditions:
-#
-#
 import platform
 from binascii import hexlify
 
@@ -34,6 +25,7 @@ from binascii import hexlify
 import pytest
 
 import xmlcli_mod.common.constants as const
+import xmlcli_mod.common.errors as err
 from xmlcli_mod import xmlclilib
 
 class TestIsLegValid:
@@ -239,6 +231,33 @@ class TestReadXmlDetails:
         address, size = xmlclilib.read_xml_details(0)
         assert address == 0xc0de
         assert size == 0xbad
+
+
+class TestGetXml:
+    def test_get_xml_no_data(self, mocker):
+        mocker.patch.object(xmlclilib, "get_dram_mb_addr", return_value=0xbadc0de)
+        mocker.patch.object(xmlclilib, "read_mem_block", return_value=0xc0ffee)
+        # mocker.patch.object(xmlclilib, "read_xml_details", return_value=(0xba5e, 0xba11))
+        mocker.patch.object(xmlclilib, "read_xml_details", return_value=(0, 0))
+        with pytest.raises(err.BiosKnobsDataUnavailable):
+            xmlclilib.get_xml()
+
+    def test_get_xml_no_invalid_data(self, mocker):
+        mocker.patch.object(xmlclilib, "get_dram_mb_addr", return_value=0xbadc0de)
+        mocker.patch.object(xmlclilib, "read_mem_block", return_value=0xc0ffee)
+        mocker.patch.object(xmlclilib, "read_xml_details", return_value=(0xba5e, 0xba11))
+        mocker.patch.object(xmlclilib, "is_xml_valid", return_value=False)
+
+        with pytest.raises(err.InvalidXmlData):
+            xmlclilib.get_xml()
+
+    def test_get_xml(self, mocker):
+        mocker.patch.object(xmlclilib, "get_dram_mb_addr", return_value=0xbadc0de)
+        mocker.patch.object(xmlclilib, "read_mem_block", return_value=0xc0ffee)
+        mocker.patch.object(xmlclilib, "read_xml_details", return_value=(0xba5e, 0xba11))
+        mocker.patch.object(xmlclilib, "is_xml_valid", return_value=True)
+        mocker.patch.object(xmlclilib, "read_mem_block", return_value=b"<SYSTEM></SYSTEM>")
+        assert xmlclilib.get_xml() == "<SYSTEM></SYSTEM>"
 
 
 def test_get_version(mocker):
