@@ -26,7 +26,7 @@ from xmlcli_mod import xmlcli
 from xmlcli_mod import xmlclilib
 
 import xmlcli_mod.common.errors as err
-# import xmlcli_mod.common.utils as utils
+
 
 class TestXmlCli:
     @pytest.fixture

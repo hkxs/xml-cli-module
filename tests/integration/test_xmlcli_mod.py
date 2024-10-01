@@ -1,4 +1,3 @@
-#
 #  Copyright 2024 Hkxs
 #
 #  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,4 +18,31 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from xmlcli_mod.access.linux.linux import LinuxAccess
+import os
+import pytest
+from pathlib import Path
+
+
+def test_get_knob(xmlcli_obj):
+    assert xmlcli_obj.get_knob("TestKnob").name == "TestKnob"
+    assert xmlcli_obj.get_knob("StringKnob").name == "StringKnob"
+
+    with pytest.raises(KeyError) as e:
+        xmlcli_obj.get_knob("InvalidKnob")
+    assert "InvalidKnob" in str(e.value)
+
+
+def test_compare_knob(xmlcli_obj):
+    assert not xmlcli_obj.compare_knob("TestKnob", 0)
+    assert xmlcli_obj.compare_knob("TestKnob", 1)
+
+    assert not xmlcli_obj.compare_knob("StringKnob", "a")
+    assert xmlcli_obj.compare_knob("StringKnob", "b")
+
+
+def test_save_xml_knobs(xmlcli_obj):
+    test_file = Path("test.xml")
+    assert not test_file.exists()
+    xmlcli_obj.save_xml_knobs(test_file)
+    assert test_file.exists()
+    os.remove(test_file)
