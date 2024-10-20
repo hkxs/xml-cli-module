@@ -27,6 +27,7 @@ import xmlcli_mod.common.constants as const
 import xmlcli_mod.common.errors as err
 from xmlcli_mod.common import utils
 from xmlcli_mod import xmlclilib
+from xmlcli_mod.dataclasses.spec_version import CliSpecVersion
 
 
 @pytest.fixture()
@@ -40,9 +41,6 @@ def xmlcli_lib(mocker):
 class TestIsLegValid:
 
     def test_is_leg_mb_sig_valid_not_valid(self, xmlcli_lib, mocker):
-        xmlclilib.CliSpecRelVersion = 0x0
-        xmlclilib.CliSpecMajorVersion = 0x0
-
         mocker.patch.object(xmlcli_lib, "mem_read", side_effect=[0x0, 0x0])
         assert not xmlcli_lib.is_leg_mb_sig_valid(0xc0de)
 
@@ -53,24 +51,13 @@ class TestIsLegValid:
         assert not xmlcli_lib.is_leg_mb_sig_valid(0xc0de)
 
     def test_is_leg_mb_sig_valid_valid(self, xmlcli_lib, mocker):
-        xmlclilib.CliSpecRelVersion = 0x0
-        xmlclilib.CliSpecMajorVersion = 0x0
-
-        mocked_version = 0xbadc0de
-        mocker.patch.object(xmlcli_lib, "get_cli_spec_version", return_value=mocked_version)
-        mocker.patch.object(xmlcli_lib, "mem_read", side_effect=[const.SHAREDMB_SIG1, const.SHAREDMB_SIG2, mocked_version])
-
-        assert xmlcli_lib.is_leg_mb_sig_valid(0xc0de) == mocked_version
+        mocker.patch.object(xmlcli_lib, "mem_read", side_effect=[const.SHAREDMB_SIG1, const.SHAREDMB_SIG2, 0xc0de])
+        assert xmlcli_lib.is_leg_mb_sig_valid(0xc0de)
 
     def test_is_leg_mb_sig_valid_legacy(self, xmlcli_lib, mocker):
-        xmlclilib.CliSpecRelVersion = 0x0
-        xmlclilib.CliSpecMajorVersion = 0x0
-
-        mocked_version = 0xbadc0de
-        mocker.patch.object(xmlcli_lib, "get_cli_spec_version", return_value=mocked_version)
+        mocker.patch.object(xmlcli_lib, "fix_leg_xml_offset")
         mocker.patch.object(xmlcli_lib, "mem_read", side_effect=[const.SHAREDMB_SIG1, const.SHAREDMB_SIG2, const.LEGACYMB_SIG])
-
-        assert xmlcli_lib.is_leg_mb_sig_valid(0xc0de) == mocked_version
+        assert xmlcli_lib.is_leg_mb_sig_valid(0xc0de)
 
 
 class TestReadBuffer:
@@ -116,7 +103,6 @@ class TestGetDramMbAddr:
     def test_get_dram_mb_addr_valid_second_try(self, xmlcli_lib, mocker):
         xmlcli_lib._dram_shared_mb_address = 0
         mocker.patch.object(xmlcli_lib, "write_io")
-        mocker.patch.object(xmlcli_lib, "get_cli_spec_version")
         mocker.patch.object(xmlcli_lib, "read_io", side_effect=[0x0, 0x0, 0xde, 0xc0])
         mocker.patch.object(xmlcli_lib, "is_leg_mb_sig_valid", side_effect=[False, True])
         assert xmlcli_lib.dram_shared_mb_address == 0xc0de0000
@@ -160,37 +146,31 @@ class TestAccess:
 class TestFixLeg:
 
     @pytest.fixture
-    def reset_variables(self):
-        xmlclilib.CliSpecRelVersion = 0
-        xmlclilib.CliSpecMajorVersion = 0
-        xmlclilib.CliSpecMinorVersion = 0
+    def reset_variables(self, xmlcli_lib):
         const.LEGACYMB_XML_OFF = 0
-
+        xmlcli_lib._cli_spec_version = None
 
     def test_fix_leg_xml_offset_legacy(self, xmlcli_lib, reset_variables):
-        xmlclilib.CliSpecRelVersion = 1
+        xmlcli_lib._cli_spec_version = CliSpecVersion(1, 0, 0)
         xmlcli_lib.fix_leg_xml_offset(0)
         assert const.LEGACYMB_XML_OFF == 0x50
 
     def test_fix_leg_xml_offset_major_less_seven(self, xmlcli_lib, reset_variables):
-        xmlclilib.CliSpecMajorVersion = 6
+        xmlcli_lib._cli_spec_version = CliSpecVersion(0, 6, 0)
         xmlcli_lib.fix_leg_xml_offset(0)
         assert const.LEGACYMB_XML_OFF == 0xc
 
     def test_fix_leg_xml_offset_seven_one(self, xmlcli_lib, reset_variables):
-        xmlclilib.CliSpecMajorVersion = 7
-        xmlclilib.CliSpecMinorVersion = 1
+        xmlcli_lib._cli_spec_version = CliSpecVersion(0, 7, 1)
         xmlcli_lib.fix_leg_xml_offset(0)
         assert const.LEGACYMB_XML_OFF == 0x50
 
-        xmlclilib.CliSpecMajorVersion = 8
-        xmlclilib.CliSpecMinorVersion = 0
+        xmlcli_lib._cli_spec_version = CliSpecVersion(0, 8, 0)
         xmlcli_lib.fix_leg_xml_offset(0)
         assert const.LEGACYMB_XML_OFF == 0x50
 
     def test_fix_leg_xml_offset_seven_zero(self, xmlcli_lib, reset_variables, mocker):
-        xmlclilib.CliSpecMajorVersion = 7
-        xmlclilib.CliSpecMinorVersion = 0
+        xmlcli_lib._cli_spec_version = CliSpecVersion(0, 7, 0)
         mocker.patch.object(xmlcli_lib, "mem_read", side_effect=[0, 0])
         xmlcli_lib.fix_leg_xml_offset(0)
         assert const.LEGACYMB_XML_OFF == 0x50
@@ -260,11 +240,9 @@ class TestGetXml:
 
 
 def test_get_version(xmlcli_lib, mocker):
-    xmlclilib.CliSpecRelVersion = 0
-    xmlclilib.CliSpecMajorVersion = 0
-    xmlclilib.CliSpecMinorVersion = 0
+    xmlcli_lib._cli_spec_version = None
     mocker.patch.object(xmlcli_lib, "mem_read", side_effect=[1, 2, 3])
-    assert "1.2.3" == xmlcli_lib.get_cli_spec_version(0)
-    assert xmlclilib.CliSpecRelVersion == 1
-    assert xmlclilib.CliSpecMajorVersion == 2
-    assert xmlclilib.CliSpecMinorVersion == 3
+    assert "1.2.3" == str(xmlcli_lib.cli_spec_version)
+    assert xmlcli_lib.cli_spec_version.release == 1
+    assert xmlcli_lib.cli_spec_version.major == 2
+    assert xmlcli_lib.cli_spec_version.minor == 3

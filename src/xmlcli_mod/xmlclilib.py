@@ -28,12 +28,9 @@ from xmlcli_mod.common.errors import BiosKnobsDataUnavailable
 from xmlcli_mod.common.errors import InvalidXmlData
 from xmlcli_mod.common.errors import XmlCliNotSupported
 from xmlcli_mod.common.utils import read_buffer, un_hex_li_fy
+from xmlcli_mod.dataclasses.spec_version import CliSpecVersion
 
 logger = logging.getLogger(__name__)
-
-CliSpecRelVersion = 0x00
-CliSpecMajorVersion = 0x00
-CliSpecMinorVersion = 0x00
 
 PAGE_SIZE = 0x1000
 
@@ -53,7 +50,15 @@ def _load_os_specific_access():
 class XmlCliLib:
     def __init__(self):
         self._dram_shared_mb_address = 0
+        self._cli_spec_version = None
         self._access = _load_os_specific_access()
+
+    @property
+    def cli_spec_version(self):
+        if not self._cli_spec_version:
+            self._cli_spec_version = self._get_cli_spec_version(self.dram_shared_mb_address)
+        logger.debug(f"CLI Spec Version = {self._cli_spec_version}")
+        return self._cli_spec_version
 
     @property
     def dram_shared_mb_address(self):
@@ -64,6 +69,7 @@ class XmlCliLib:
         """
         if not self._dram_shared_mb_address:
             self._dram_shared_mb_address = self._read_dram_mb_addr()
+        logger.debug(f"DRAM_MbAddr = 0x{self._dram_shared_mb_address:X}")
         return self._dram_shared_mb_address
 
     def read_mem_block(self, address, size):  # pragma: no cover, this should go away with refactoring
@@ -212,19 +218,16 @@ class XmlCliLib:
         self.write_io(0xCF8, 4, rtc_reg_pci_address)
         self.write_io(0xCFC, 2, rtc_value)  # set cmos bad in PCH RTC register
 
-    def get_cli_spec_version(self, dram_mb_addr):
-        global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion
-        CliSpecRelVersion = self.mem_read((dram_mb_addr + const.CLI_SPEC_VERSION_RELEASE_OFF), 1) & 0xF
-        CliSpecMajorVersion = self.mem_read((dram_mb_addr + const.CLI_SPEC_VERSION_MAJOR_OFF), 2)
-        CliSpecMinorVersion = self.mem_read((dram_mb_addr + const.CLI_SPEC_VERSION_MINOR_OFF), 1)
-        return f"{CliSpecRelVersion:d}.{CliSpecMajorVersion:d}.{CliSpecMinorVersion:d}"
+    def _get_cli_spec_version(self, dram_mb_addr):
+        rel_version = self.mem_read((dram_mb_addr + const.CLI_SPEC_VERSION_RELEASE_OFF), 1) & 0xF
+        major_version = self.mem_read((dram_mb_addr + const.CLI_SPEC_VERSION_MAJOR_OFF), 2)
+        minor_version = self.mem_read((dram_mb_addr + const.CLI_SPEC_VERSION_MINOR_OFF), 1)
+        return CliSpecVersion(release=rel_version, major=major_version, minor=minor_version)
 
     def fix_leg_xml_offset(self, dram_mb_addr):
-        global CliSpecRelVersion, CliSpecMajorVersion, CliSpecMinorVersion  # just for reading
-
-        if CliSpecRelVersion:
+        if self.cli_spec_version.release:
             const.LEGACYMB_XML_OFF = 0x50
-        elif (CliSpecMajorVersion == 7) and (CliSpecMinorVersion == 0):
+        elif (self.cli_spec_version.major == 7) and (self.cli_spec_version.minor == 0):
             leg_mb_offset = self.mem_read((dram_mb_addr + const.LEGACYMB_OFF), 4)
             if leg_mb_offset < 0xFFFF:
                 leg_mb_offset = dram_mb_addr + leg_mb_offset
@@ -233,7 +236,7 @@ class XmlCliLib:
                 const.LEGACYMB_XML_OFF = 0x4C
             else:
                 const.LEGACYMB_XML_OFF = 0x50
-        elif CliSpecMajorVersion >= 7:
+        elif self.cli_spec_version.major >= 7:
             const.LEGACYMB_XML_OFF = 0x50
         else:
             const.LEGACYMB_XML_OFF = 0x0C
@@ -242,11 +245,10 @@ class XmlCliLib:
         shared_mb_sig1 = self.mem_read((dram_mb_addr + const.SHAREDMB_SIG1_OFF), 4)
         shared_mb_sig2 = self.mem_read((dram_mb_addr + const.SHAREDMB_SIG2_OFF), 4)
         if (shared_mb_sig1 == const.SHAREDMB_SIG1) and (shared_mb_sig2 == const.SHAREDMB_SIG2):
-            cli_spec_version = self.get_cli_spec_version(dram_mb_addr)
             share_mb_entry1_sig = self.mem_read((dram_mb_addr + const.LEGACYMB_SIG_OFF), 4)
             if share_mb_entry1_sig == const.LEGACYMB_SIG:
                 self.fix_leg_xml_offset(dram_mb_addr)
-            return cli_spec_version
+            return True
         return False
 
     def _read_dram_mb_addr(self):
@@ -264,8 +266,6 @@ class XmlCliLib:
         result1 = int(self.read_io(0x71, 1) & 0xFF)  # Read a byte from cmos offset 0xBC [31:24]
         dram_shared_mb_address = int((result1 << 24) | (result0 << 16))  # Get bits [31:24] of the Dram MB address
         if self.is_leg_mb_sig_valid(dram_shared_mb_address):
-            logger.debug(f"CLI Spec Version = {self.get_cli_spec_version(dram_shared_mb_address)}")
-            logger.debug(f"DRAM_MbAddr = 0x{dram_shared_mb_address:X}")
             return dram_shared_mb_address
 
         raise XmlCliNotSupported()
@@ -326,13 +326,7 @@ class XmlCliLib:
     # everything is setup properly on the platform
     def is_xml_generated(self):  # pragma: no cover, not used for now
         status = 0
-        dram_mb_addr = self.dram_shared_mb_address  # Get DRam Mailbox Address from Cmos.
-        logger.debug(f"CLI Spec Version = {self.get_cli_spec_version(dram_mb_addr)}")
-        logger.debug(f"dram_mb_addr = 0x{dram_mb_addr:X}")
-        if dram_mb_addr == 0x0:
-            logger.error("Dram Shared Mailbox not Valid, hence exiting")
-            return 1
-        dram_shared_m_bbuf = self.read_mem_block(dram_mb_addr, 0x200)  # Read/save parameter buffer
+        dram_shared_m_bbuf = self.read_mem_block(self.dram_shared_mb_address, 0x200)  # Read/save parameter buffer
         xml_addr, xml_size = self.read_xml_details(dram_shared_m_bbuf)  # read GBTG XML address and Size
         if xml_addr == 0:
             logger.error("Platform Configuration XML not yet generated, hence exiting")
