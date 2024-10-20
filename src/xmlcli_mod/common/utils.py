@@ -22,6 +22,8 @@
 import binascii
 import os
 
+from xmlcli_mod.common import constants as const
+
 
 def is_root():
     return os.geteuid() == 0
@@ -42,3 +44,34 @@ def str_to_int(value: str) -> int:
         return int(value, 16)
     else:
         return int(value)
+
+
+def read_buffer(input_buffer: bytearray, offset, size, input_type):
+    """
+    This function reads the desired format of data of specified size
+    from the given offset of buffer.
+
+    > Input buffer is in big endian ASCII format
+
+    :param input_buffer: buffer from which data to be read
+    :param offset: start offset from which data to be read
+    :param size: size to be read from buffer
+    :param input_type: format in which data can be read (ascii or hex)
+
+    :return: buffer read from input
+    """
+    value_buffer = input_buffer[offset:offset + size]
+    value_string = ""
+    if not value_buffer or input_type not in [const.ASCII, const.HEX]:
+        return 0
+    if input_type == const.ASCII:
+        value_string = "".join(chr(value) for value in value_buffer)
+        return value_string
+    if input_type == const.HEX:
+        for value in value_buffer:
+            value_string = f"{value:02x}" + value_string
+        return int(value_string, 16)
+
+
+def un_hex_li_fy(value):  # pragma: no cover, not used for now
+    return binascii.unhexlify((hex(value)[2:]).strip("L")).decode()

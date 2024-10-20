@@ -34,7 +34,8 @@ def valid_xml_file():
     return  """<SYSTEM>
              <biosknobs>
              <knob type='scalar' name='TestKnob' description='Test Description' CurrentVal='1' default='0' size='1' offset='0x10' />
-             <knob type='string' name='StringKnob' description='Test Description' CurrentVal='b' default='a' size='1' offset='0x20' /></biosknobs>
+             <knob type='string' name='StringKnob' description='Test Description' CurrentVal='b' default='a' size='1' offset='0x20' />
+             </biosknobs>
              </SYSTEM>
              """
 
