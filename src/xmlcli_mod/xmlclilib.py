@@ -27,7 +27,7 @@ import xmlcli_mod.common.constants as const
 from xmlcli_mod.common.errors import BiosKnobsDataUnavailable
 from xmlcli_mod.common.errors import InvalidXmlData
 from xmlcli_mod.common.errors import XmlCliNotSupported
-from xmlcli_mod.common.utils import read_buffer, un_hex_li_fy
+from xmlcli_mod.common.utils import read_buffer
 from xmlcli_mod.dataclasses.spec_version import CliSpecVersion
 
 logger = logging.getLogger(__name__)
@@ -200,7 +200,6 @@ class XmlCliLib:
 
         raise XmlCliNotSupported()
 
-
     def read_xml_details(self, dram_shared_mailbox_buffer):
         """
         Get XML Base Address & XML size details from the Shared Mailbox temp buffer
@@ -230,7 +229,6 @@ class XmlCliLib:
                     gbt_xml_addr = read_buffer(dram_shared_mailbox_buffer, dram_shared_mb_offset, 4, const.HEX) + 4
                 gbt_xml_size = self.mem_read(gbt_xml_addr - 4, 4)
         return gbt_xml_addr, gbt_xml_size
-
 
     def is_xml_valid(self, gbt_xml_address, gbt_xml_size):
         """
@@ -265,6 +263,6 @@ class XmlCliLib:
             xml_bytearray = self.read_mem_block(xml_addr, int(xml_size))
             xml_data = xml_bytearray.decode()
         else:
-            raise InvalidXmlData(f"Invalid XML or not generated yet, xml_addr = 0x{xml_addr:X}, xml_size = 0x{xml_size:X}")
+            raise InvalidXmlData(f"Invalid XML or not generated yet, xml_addr=0x{xml_addr:X}, xml_size=0x{xml_size:X}")
 
         return xml_data

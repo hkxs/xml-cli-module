@@ -24,10 +24,10 @@ from pathlib import Path
 from xml.etree.ElementTree import Element, ElementTree  # nosec B405, not used for parsing xml data
 
 import defusedxml.ElementTree as ET
-from xmlcli_mod.xmlclilib import XmlCliLib
 from xmlcli_mod.common.errors import RootError
 from xmlcli_mod.common.utils import is_root, str_to_int
 from xmlcli_mod.dataclasses.knobs import Knob
+from xmlcli_mod.xmlclilib import XmlCliLib
 
 
 log = logging.getLogger(__name__)
