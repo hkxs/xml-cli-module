@@ -41,7 +41,7 @@ class TestXmlCli:
         """
         mocker.patch.object(xmlcli, "is_root", return_value=True)
         mocker.patch.object(xmlclilib, "_load_os_specific_access")
-        mocker.patch.object(xmlclilib.XmlCliLib, "verify_xmlcli_support")
+        mocker.patch.object(xmlclilib.XmlCliLib, "dram_shared_mb_address", return_value=0xc0de)
         mocker.patch.object(xmlclilib.XmlCliLib, "get_xml", return_value=test_xml)
 
         return xmlcli.XmlCli()

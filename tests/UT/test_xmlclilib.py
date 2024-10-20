@@ -99,7 +99,8 @@ class TestGetDramMbAddr:
         mocker.patch.object(xmlcli_lib, "read_io", return_value=0)
         mocker.patch.object(xmlcli_lib, "write_io")
         mocker.patch.object(xmlcli_lib, "is_leg_mb_sig_valid", return_value=False)
-        assert not xmlcli_lib.dram_shared_mb_address
+        with pytest.raises(err.XmlCliNotSupported):
+            _ = xmlcli_lib.dram_shared_mb_address
 
     def test_get_dram_mb_addr_reuse(self, xmlcli_lib, mocker):
         xmlcli_lib._dram_shared_mb_address = 0xc0de

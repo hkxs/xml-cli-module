@@ -74,7 +74,6 @@ class XmlCli:
         self.xml_data = ElementTree(Element("root"))
         self._knobs = None
         self._xmlclilib = XmlCliLib()
-        self._xmlclilib.verify_xmlcli_support()
         self._get_xml_knobs()
 
     def _get_xml_knobs(self) -> None:

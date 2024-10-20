@@ -268,12 +268,7 @@ class XmlCliLib:
             logger.debug(f"DRAM_MbAddr = 0x{dram_shared_mb_address:X}")
             return dram_shared_mb_address
 
-        return 0
-
-    def verify_xmlcli_support(self):
-        if not self.dram_shared_mb_address:
-            raise XmlCliNotSupported()
-        logger.debug("XmlCli is Enabled")
+        raise XmlCliNotSupported()
 
 
     def read_xml_details(self, dram_shared_mailbox_buffer):
@@ -351,11 +346,7 @@ class XmlCliLib:
 
 
     def get_xml(self):
-
-        # TODO add verification of DRAM address using verify_xmlcli_support
-        dram_mb_addr = self.dram_shared_mb_address  # Get DRam Mailbox Address from Cmos.
-
-        dram_shared_memory_buf = self.read_mem_block(dram_mb_addr, 0x200)  # Read/save parameter buffer
+        dram_shared_memory_buf = self.read_mem_block(self.dram_shared_mb_address, 0x200)  # Read/save parameter buffer
         xml_addr, xml_size = self.read_xml_details(dram_shared_memory_buf)  # read GBTG XML address and Size
 
         logger.debug(f"XML Addr={xml_addr:#x}, XML Size={xml_size:#x}")
