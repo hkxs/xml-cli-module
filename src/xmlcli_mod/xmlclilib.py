@@ -242,14 +242,15 @@ class XmlCliLib:
             const.LEGACYMB_XML_OFF = 0x0C
 
     def is_leg_mb_sig_valid(self, dram_mb_addr):
+        is_valid = False
         shared_mb_sig1 = self.mem_read((dram_mb_addr + const.SHAREDMB_SIG1_OFF), 4)
         shared_mb_sig2 = self.mem_read((dram_mb_addr + const.SHAREDMB_SIG2_OFF), 4)
         if (shared_mb_sig1 == const.SHAREDMB_SIG1) and (shared_mb_sig2 == const.SHAREDMB_SIG2):
             share_mb_entry1_sig = self.mem_read((dram_mb_addr + const.LEGACYMB_SIG_OFF), 4)
+            is_valid = True
             if share_mb_entry1_sig == const.LEGACYMB_SIG:
                 self.fix_leg_xml_offset(dram_mb_addr)
-            return True
-        return False
+        return is_valid
 
     def _read_dram_mb_addr(self):
         self.write_io(0x72, 1, 0xF0)  # Write a byte to cmos offset 0xF0
