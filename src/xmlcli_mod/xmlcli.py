@@ -24,7 +24,7 @@ from pathlib import Path
 from xml.etree.ElementTree import Element, ElementTree  # nosec B405, not used for parsing xml data
 
 import defusedxml.ElementTree as ET
-from xmlcli_mod import xmlclilib
+from xmlcli_mod.xmlclilib import XmlCliLib
 from xmlcli_mod.common.errors import RootError
 from xmlcli_mod.common.utils import is_root, str_to_int
 from xmlcli_mod.dataclasses.knobs import Knob
@@ -73,8 +73,8 @@ class XmlCli:
         self._xml_string = ""
         self.xml_data = ElementTree(Element("root"))
         self._knobs = None
-        xmlclilib.set_cli_access()
-        xmlclilib.verify_xmlcli_support()
+        self._xmlclilib = XmlCliLib()
+        self._xmlclilib.verify_xmlcli_support()
         self._get_xml_knobs()
 
     def _get_xml_knobs(self) -> None:
@@ -84,7 +84,7 @@ class XmlCli:
         This method fetches the XML configuration and assigns it to the
         `xml_data` attribute.
         """
-        self._xml_string = xmlclilib.get_xml()
+        self._xml_string = self._xmlclilib.get_xml()
         defused_xml = ET.fromstring(self._xml_string)
 
         # we're converting an element to a tree, we can safely use built-in xml

@@ -40,9 +40,9 @@ class TestXmlCli:
         </SYSTEM>
         """
         mocker.patch.object(xmlcli, "is_root", return_value=True)
-        mocker.patch.object(xmlclilib, "set_cli_access")
-        mocker.patch.object(xmlclilib, "verify_xmlcli_support")
-        mocker.patch.object(xmlclilib, "get_xml", return_value=test_xml)
+        mocker.patch.object(xmlclilib, "_load_os_specific_access")
+        mocker.patch.object(xmlclilib.XmlCliLib, "verify_xmlcli_support")
+        mocker.patch.object(xmlclilib.XmlCliLib, "get_xml", return_value=test_xml)
 
         return xmlcli.XmlCli()
 
