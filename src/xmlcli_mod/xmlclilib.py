@@ -31,10 +31,6 @@ from xmlcli_mod.common.utils import read_buffer, un_hex_li_fy
 
 logger = logging.getLogger(__name__)
 
-cli_access = None
-
-gDramSharedMbAddr = 0
-
 CliSpecRelVersion = 0x00
 CliSpecMajorVersion = 0x00
 CliSpecMinorVersion = 0x00
@@ -56,7 +52,19 @@ def _load_os_specific_access():
 
 class XmlCliLib:
     def __init__(self):
+        self._dram_shared_mb_address = 0
         self._access = _load_os_specific_access()
+
+    @property
+    def dram_shared_mb_address(self):
+        """
+        Read DRAM shared Mailbox from CMOS location 0xBB [23:16] & 0xBC [31:24]
+
+        :return:
+        """
+        if not self._dram_shared_mb_address:
+            self._dram_shared_mb_address = self._read_dram_mb_addr()
+        return self._dram_shared_mb_address
 
     def read_mem_block(self, address, size):  # pragma: no cover, this should go away with refactoring
         """
@@ -241,14 +249,7 @@ class XmlCliLib:
             return cli_spec_version
         return False
 
-
-    def get_dram_mb_addr(self):
-        """
-        Read DRAM shared Mailbox from CMOS location 0xBB [23:16] & 0xBC [31:24]
-
-        :return:
-        """
-        global gDramSharedMbAddr  # just read it
+    def _read_dram_mb_addr(self):
         self.write_io(0x72, 1, 0xF0)  # Write a byte to cmos offset 0xF0
         result0 = int(self.read_io(0x73, 1) & 0xFF)  # Read a byte from cmos offset 0xBB [23:16]
         self.write_io(0x72, 1, 0xF1)  # Write a byte to cmos offset 0xF1
@@ -267,17 +268,10 @@ class XmlCliLib:
             logger.debug(f"DRAM_MbAddr = 0x{dram_shared_mb_address:X}")
             return dram_shared_mb_address
 
-        if gDramSharedMbAddr != 0:
-            dram_shared_mb_address = int(gDramSharedMbAddr)
-            if self.is_leg_mb_sig_valid(dram_shared_mb_address):
-                logger.debug(f"CLI Spec Version = {self.get_cli_spec_version(dram_shared_mb_address)}")
-                logger.debug(f"DRAM_MbAddr = 0x{dram_shared_mb_address:X}")
-                return dram_shared_mb_address
-
         return 0
 
     def verify_xmlcli_support(self):
-        if not self.get_dram_mb_addr():
+        if not self.dram_shared_mb_address:
             raise XmlCliNotSupported()
         logger.debug("XmlCli is Enabled")
 
@@ -337,7 +331,7 @@ class XmlCliLib:
     # everything is setup properly on the platform
     def is_xml_generated(self):  # pragma: no cover, not used for now
         status = 0
-        dram_mb_addr = self.get_dram_mb_addr()  # Get DRam Mailbox Address from Cmos.
+        dram_mb_addr = self.dram_shared_mb_address  # Get DRam Mailbox Address from Cmos.
         logger.debug(f"CLI Spec Version = {self.get_cli_spec_version(dram_mb_addr)}")
         logger.debug(f"dram_mb_addr = 0x{dram_mb_addr:X}")
         if dram_mb_addr == 0x0:
@@ -359,7 +353,7 @@ class XmlCliLib:
     def get_xml(self):
 
         # TODO add verification of DRAM address using verify_xmlcli_support
-        dram_mb_addr = self.get_dram_mb_addr()  # Get DRam Mailbox Address from Cmos.
+        dram_mb_addr = self.dram_shared_mb_address  # Get DRam Mailbox Address from Cmos.
 
         dram_shared_memory_buf = self.read_mem_block(dram_mb_addr, 0x200)  # Read/save parameter buffer
         xml_addr, xml_size = self.read_xml_details(dram_shared_memory_buf)  # read GBTG XML address and Size

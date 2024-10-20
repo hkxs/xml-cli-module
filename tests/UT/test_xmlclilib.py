@@ -32,7 +32,9 @@ from xmlcli_mod import xmlclilib
 @pytest.fixture()
 def xmlcli_lib(mocker):
     mocker.patch.object(xmlclilib, "_load_os_specific_access")
-    return xmlclilib.XmlCliLib()
+    xmlcli_obj = xmlclilib.XmlCliLib()
+    xmlcli_obj._dram_shared_mb_address = 0xbadc0de
+    return xmlcli_obj
 
 
 class TestIsLegValid:
@@ -93,37 +95,30 @@ class TestReadBuffer:
 
 class TestGetDramMbAddr:
     def test_get_dram_mb_addr_zero(self, xmlcli_lib, mocker):
-        xmlclilib.gDramSharedMbAddr = 0
+        xmlcli_lib._dram_shared_mb_address = 0
         mocker.patch.object(xmlcli_lib, "read_io", return_value=0)
         mocker.patch.object(xmlcli_lib, "write_io")
         mocker.patch.object(xmlcli_lib, "is_leg_mb_sig_valid", return_value=False)
-        assert not xmlcli_lib.get_dram_mb_addr()
+        assert not xmlcli_lib.dram_shared_mb_address
 
     def test_get_dram_mb_addr_reuse(self, xmlcli_lib, mocker):
-        xmlclilib.gDramSharedMbAddr = 0xc0de
-        mocker.patch.object(xmlcli_lib, "read_io", return_value=0)
-        mocker.patch.object(xmlcli_lib, "write_io")
-        mocker.patch.object(xmlcli_lib, "get_cli_spec_version")
-        mocker.patch.object(xmlcli_lib, "is_leg_mb_sig_valid", side_effect=[False, False, False])
-        assert not xmlcli_lib.get_dram_mb_addr()
-
-        mocker.patch.object(xmlcli_lib, "is_leg_mb_sig_valid", side_effect=[False, False, True])
-        assert xmlcli_lib.get_dram_mb_addr() == 0xc0de
+        xmlcli_lib._dram_shared_mb_address = 0xc0de
+        assert xmlcli_lib.dram_shared_mb_address == 0xc0de
 
     def test_get_dram_mb_addr_valid_first_try(self, xmlcli_lib, mocker):
-        xmlclilib.gDramSharedMbAddr = 0
+        xmlcli_lib._dram_shared_mb_address = 0
         mocker.patch.object(xmlcli_lib, "write_io")
         mocker.patch.object(xmlcli_lib, "read_io", side_effect=[0xde, 0xc0])
         mocker.patch.object(xmlcli_lib, "is_leg_mb_sig_valid", return_value=True)
-        assert xmlcli_lib.get_dram_mb_addr() == 0xc0de0000
+        assert xmlcli_lib.dram_shared_mb_address == 0xc0de0000
 
     def test_get_dram_mb_addr_valid_second_try(self, xmlcli_lib, mocker):
-        xmlclilib.gDramSharedMbAddr = 0
+        xmlcli_lib._dram_shared_mb_address = 0
         mocker.patch.object(xmlcli_lib, "write_io")
         mocker.patch.object(xmlcli_lib, "get_cli_spec_version")
         mocker.patch.object(xmlcli_lib, "read_io", side_effect=[0x0, 0x0, 0xde, 0xc0])
         mocker.patch.object(xmlcli_lib, "is_leg_mb_sig_valid", side_effect=[False, True])
-        assert xmlcli_lib.get_dram_mb_addr() == 0xc0de0000
+        assert xmlcli_lib.dram_shared_mb_address == 0xc0de0000
 
 
 class TestXmlValid:
@@ -242,14 +237,12 @@ class TestReadXmlDetails:
 
 class TestGetXml:
     def test_get_xml_no_data(self, xmlcli_lib, mocker):
-        mocker.patch.object(xmlcli_lib, "get_dram_mb_addr", return_value=0xbadc0de)
         mocker.patch.object(xmlcli_lib, "read_mem_block", return_value=0xc0ffee)
         mocker.patch.object(xmlcli_lib, "read_xml_details", return_value=(0, 0))
         with pytest.raises(err.BiosKnobsDataUnavailable):
             xmlcli_lib.get_xml()
 
     def test_get_xml_no_invalid_data(self, xmlcli_lib, mocker):
-        mocker.patch.object(xmlcli_lib, "get_dram_mb_addr", return_value=0xbadc0de)
         mocker.patch.object(xmlcli_lib, "read_mem_block", return_value=0xc0ffee)
         mocker.patch.object(xmlcli_lib, "read_xml_details", return_value=(0xba5e, 0xba11))
         mocker.patch.object(xmlcli_lib, "is_xml_valid", return_value=False)
@@ -258,7 +251,6 @@ class TestGetXml:
             xmlcli_lib.get_xml()
 
     def test_get_xml(self, xmlcli_lib, mocker):
-        mocker.patch.object(xmlcli_lib, "get_dram_mb_addr", return_value=0xbadc0de)
         mocker.patch.object(xmlcli_lib, "read_mem_block", return_value=0xc0ffee)
         mocker.patch.object(xmlcli_lib, "read_xml_details", return_value=(0xba5e, 0xba11))
         mocker.patch.object(xmlcli_lib, "is_xml_valid", return_value=True)
