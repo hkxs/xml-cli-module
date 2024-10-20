@@ -72,7 +72,7 @@ class XmlCliLib:
         logger.debug(f"DRAM_MbAddr = 0x{self._dram_shared_mb_address:X}")
         return self._dram_shared_mb_address
 
-    def read_mem_block(self, address, size):  # pragma: no cover, this should go away with refactoring
+    def read_mem_block(self, address, size):  # pragma: no cover
         """
         Reads the data block of given size from target memory
         starting from given address.
@@ -87,7 +87,7 @@ class XmlCliLib:
 
         return self._access.mem_block(address, size)
 
-    def mem_save(self, filename, address, size):  # pragma: no cover, this should go away with refactoring
+    def mem_save(self, filename, address, size):  # pragma: no cover
         """
         Saves the memory block of given byte size to desired file
 
@@ -99,7 +99,7 @@ class XmlCliLib:
 
         return self._access.mem_save(filename, address, size)
 
-    def mem_read(self, address, size):  # pragma: no cover, this should go away with refactoring
+    def mem_read(self, address, size):  # pragma: no cover
         """
         This function reads data from specific memory.
         It can be used to read Maximum `8 bytes` of data.
@@ -112,7 +112,7 @@ class XmlCliLib:
         """
         return int(self._access.mem_read(address, size))
 
-    def mem_write(self, address, size, value):  # pragma: no cover, this should go away with refactoring
+    def mem_write(self, address, size, value):  # pragma: no cover
         """
         This function writes data to specific memory.
         It can be used to write Maximum `8 bytes` of data.
@@ -126,7 +126,7 @@ class XmlCliLib:
         """
         return self._access.mem_write(address, size, value)
 
-    def read_io(self, address, size):  # pragma: no cover, this should go away with refactoring
+    def read_io(self, address, size):  # pragma: no cover
         """
         Read data from IO ports
 
@@ -136,7 +136,7 @@ class XmlCliLib:
         """
         return int(self._access.read_io(address, size))
 
-    def write_io(self, address, size, value):  # pragma: no cover, this should go away with refactoring
+    def write_io(self, address, size, value):  # pragma: no cover
         """
         Write requested value of data to specified IO port
 
@@ -146,77 +146,6 @@ class XmlCliLib:
         :return:
         """
         return self._access.write_io(address, size, value)
-
-    def trigger_smi(self, smi_val):  # pragma: no cover, this should go away with refactoring
-        """
-        Triggers the software SMI of desired value. Triggering SMI involves writing
-        desired value to port 0x72.
-        Internally writing to port achieved by write io api
-
-        :param smi_val: Value with which SMI should be triggered
-        :return:
-        """
-        return self._access.trigger_smi(smi_val)
-
-    def read_cmos(self, register_address):  # pragma: no cover, not used for now
-        """
-        Read CMOS register value
-
-        :param register_address: CMOS register address
-        :return:
-        """
-        upper_register_val = 0x0 if register_address < 0x80 else 0x2
-        self.write_io(0x70 + upper_register_val, 1, register_address)
-        value = self._access.read_io(0x71 + upper_register_val, 1)
-        return value
-
-    def write_cmos(self, register_address, value):  # pragma: no cover, not used for now
-        """
-        Write value to CMOS address register
-
-        :param register_address: address of CMOS register
-        :param value: value to be written on specified CMOS register
-        :return:
-        """
-        if register_address < 0x80:
-            self.write_io(0x70, 1, register_address)
-            self.write_io(0x71, 1, value)
-
-        if register_address >= 0x80:
-            self.write_io(0x72, 1, register_address)
-            self.write_io(0x73, 1, value)
-
-    def clear_cmos(self):  # pragma: no cover, not used for now
-        """
-        Clear all CMOS locations to 0 and set CMOS BAD flag.
-
-        Writing 0 to CMOS data port and writing register value to CMOS address port,
-        CMOS clearing is achived
-
-        CMOS are accessed through IO ports 0x70 and 0x71. Each CMOS values are
-        accessed a byte at a time and each byte is individually accessible.
-
-        :return:
-        """
-        logger.warning("Clearing CMOS")
-        for i in range(0x0, 0x80, 1):
-            self.write_io(0x70, 1, i)
-            self.write_io(0x71, 1, 0)
-            value = i | 0x80
-            if value in (0xF0, 0xF1):
-                # skip clearing the CMOS registers which hold Dram Shared MB address.
-                continue
-            self.write_io(0x72, 1, value)
-            self.write_io(0x73, 1, 0)
-        self.write_io(0x70, 1, 0x0E)
-        self.write_io(0x71, 1, 0xC0)  # set CMOS BAD flag
-
-        rtc_reg_pci_address = (1 << 31) + (0 << 16) + (31 << 11) + (0 << 8) + 0xA4
-        self.write_io(0xCF8, 4, rtc_reg_pci_address)
-        rtc_value = self.read_io(0xCFC, 2)
-        rtc_value = rtc_value | 0x4
-        self.write_io(0xCF8, 4, rtc_reg_pci_address)
-        self.write_io(0xCFC, 2, rtc_value)  # set cmos bad in PCH RTC register
 
     def _get_cli_spec_version(self, dram_mb_addr):
         rel_version = self.mem_read((dram_mb_addr + const.CLI_SPEC_VERSION_RELEASE_OFF), 1) & 0xF
@@ -322,22 +251,6 @@ class XmlCliLib:
             is_valid = False
 
         return is_valid
-
-    # TODO this seems helpful in some way, it can/should be used to determine if
-    # everything is setup properly on the platform
-    def is_xml_generated(self):  # pragma: no cover, not used for now
-        status = 0
-        dram_shared_m_bbuf = self.read_mem_block(self.dram_shared_mb_address, 0x200)  # Read/save parameter buffer
-        xml_addr, xml_size = self.read_xml_details(dram_shared_m_bbuf)  # read GBTG XML address and Size
-        if xml_addr == 0:
-            logger.error("Platform Configuration XML not yet generated, hence exiting")
-            return 1
-        if self.is_xml_valid(xml_addr, xml_size):
-            logger.debug("Xml Is Generated and it is Valid")
-        else:
-            logger.error(f"XML is not valid or not yet generated ADDR = 0x{xml_addr:X}, SIZE = 0x{xml_size:X}")
-            status = 1
-        return status
 
     def get_xml(self):
         dram_shared_memory_buf = self.read_mem_block(self.dram_shared_mb_address, 0x200)  # Read/save parameter buffer
