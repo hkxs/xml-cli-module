@@ -155,22 +155,23 @@ class TestFixLeg:
         xmlcli_lib.fix_leg_xml_offset(0)
         assert const.LEGACYMB_XML_OFF == 0x50
 
-    def test_fix_leg_xml_offset_major_less_seven(self, xmlcli_lib, reset_variables):
-        xmlcli_lib._cli_spec_version = CliSpecVersion(0, 6, 0)
+    def test_fix_leg_xml_offset_major_less_seven(self, xmlcli_lib, reset_variables, mocker):
+        mocker.patch.object(xmlcli_lib, "_get_cli_spec_version", return_value=CliSpecVersion(0, 6, 0))
         xmlcli_lib.fix_leg_xml_offset(0)
         assert const.LEGACYMB_XML_OFF == 0xc
 
-    def test_fix_leg_xml_offset_seven_one(self, xmlcli_lib, reset_variables):
-        xmlcli_lib._cli_spec_version = CliSpecVersion(0, 7, 1)
+    def test_fix_leg_xml_offset_seven_one(self, xmlcli_lib, reset_variables, mocker):
+        mocker.patch.object(xmlcli_lib, "_get_cli_spec_version", return_value=CliSpecVersion(0, 7, 1))
+
         xmlcli_lib.fix_leg_xml_offset(0)
         assert const.LEGACYMB_XML_OFF == 0x50
 
-        xmlcli_lib._cli_spec_version = CliSpecVersion(0, 8, 0)
+        mocker.patch.object(xmlcli_lib, "_get_cli_spec_version", return_value=CliSpecVersion(0, 8, 0))
         xmlcli_lib.fix_leg_xml_offset(0)
         assert const.LEGACYMB_XML_OFF == 0x50
 
     def test_fix_leg_xml_offset_seven_zero(self, xmlcli_lib, reset_variables, mocker):
-        xmlcli_lib._cli_spec_version = CliSpecVersion(0, 7, 0)
+        mocker.patch.object(xmlcli_lib, "_get_cli_spec_version", return_value=CliSpecVersion(0, 7, 0))
         mocker.patch.object(xmlcli_lib, "mem_read", side_effect=[0, 0])
         xmlcli_lib.fix_leg_xml_offset(0)
         assert const.LEGACYMB_XML_OFF == 0x50

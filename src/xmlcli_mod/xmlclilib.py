@@ -154,9 +154,10 @@ class XmlCliLib:
         return CliSpecVersion(release=rel_version, major=major_version, minor=minor_version)
 
     def fix_leg_xml_offset(self, dram_mb_addr):
-        if self.cli_spec_version.release:
+        cli_spec_version = self._get_cli_spec_version(dram_mb_addr)  # use the new address to find the version
+        if cli_spec_version.release:
             const.LEGACYMB_XML_OFF = 0x50
-        elif (self.cli_spec_version.major == 7) and (self.cli_spec_version.minor == 0):
+        elif (cli_spec_version.major == 7) and (cli_spec_version.minor == 0):
             leg_mb_offset = self.mem_read((dram_mb_addr + const.LEGACYMB_OFF), 4)
             if leg_mb_offset < 0xFFFF:
                 leg_mb_offset = dram_mb_addr + leg_mb_offset
@@ -165,7 +166,7 @@ class XmlCliLib:
                 const.LEGACYMB_XML_OFF = 0x4C
             else:
                 const.LEGACYMB_XML_OFF = 0x50
-        elif self.cli_spec_version.major >= 7:
+        elif cli_spec_version.major >= 7:
             const.LEGACYMB_XML_OFF = 0x50
         else:
             const.LEGACYMB_XML_OFF = 0x0C
